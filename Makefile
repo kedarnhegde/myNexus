@@ -1,0 +1,26 @@
+# Create virtual environment
+setup-venv:
+	cd be && python -m venv .venv
+
+# Install backend dependencies in virtual environment
+install-be:
+	cd be && source .venv/bin/activate && pip install -r requirements.txt
+
+# Start FastAPI backend (with live reload)
+run-be:
+	cd be && source .venv/bin/activate && python -m uvicorn main:app --reload --port 8000
+
+# Start Next.js dev server
+run-fe:
+	cd fe && npm run dev
+
+# Install frontend dependencies
+install-fe:
+	cd fe && npm install
+
+# Install all dependencies
+install-all: setup-venv install-backend install-frontend
+
+# Run both frontend and backend
+dev:
+	make run-backend & make run-frontend
