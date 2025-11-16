@@ -1,12 +1,14 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import bcrypt
 import os
 from dotenv import load_dotenv
 
 from database import SessionLocal, engine, get_db
 from models import Base, User, Post, PostLike, Comment, Message, Connection, UserProfile, Tag, UserTag, UserCourse
+from schemas import UserCreate, UserUpdate, User as UserSchema, PostCreate
 from schemas import UserCreate, UserUpdate, User as UserSchema, PostCreate
 from auth_schemas import LoginRequest, LoginResponse
 from typing import Optional

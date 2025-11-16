@@ -66,13 +66,18 @@ def seed_database():
         
         users = []
         for email, username, password in users_data:
-            user = User(
-                email=email,
-                username=username,
-                password_hash=hash_password(password)
-            )
-            db.add(user)
-            users.append(user)
+            # Check if user already exists
+            existing_user = db.query(User).filter(User.email == email).first()
+            if not existing_user:
+                user = User(
+                    email=email,
+                    username=username,
+                    password_hash=hash_password(password)
+                )
+                db.add(user)
+                users.append(user)
+            else:
+                users.append(existing_user)
         
         db.commit()
         
@@ -80,6 +85,7 @@ def seed_database():
         for user in users:
             db.refresh(user)
         
+        # Create posts with categories
         # Create posts with categories
         posts_data = [
             (users[0].id, "Just finished my midterms! Time to relax 🎉", "general"),
