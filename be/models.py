@@ -56,3 +56,39 @@ class Connection(Base):
     friend_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     status = Column(String(20), default="pending")  # pending, accepted, rejected
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    gender = Column(String(20))
+    year = Column(String(20))  # freshman, sophomore, junior, senior, graduate
+    major = Column(String(100))
+    bio = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Tag(Base):
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), unique=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class UserTag(Base):
+    __tablename__ = "user_tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    tag_id = Column(Integer, ForeignKey("tags.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class UserCourse(Base):
+    __tablename__ = "user_courses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    course_code = Column(String(20), nullable=False)  # e.g., CS 576
+    course_name = Column(String(200))
+    semester = Column(String(20))  # e.g., Fall 2023
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
