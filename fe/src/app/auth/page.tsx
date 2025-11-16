@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Toast from '@/components/Toast';
 
@@ -11,6 +11,13 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const [emailWarning, setEmailWarning] = useState('');
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      router.push('/');
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +48,7 @@ export default function AuthPage() {
       if (isLogin) {
         const data = await res.json();
         localStorage.setItem('user', JSON.stringify(data));
-        router.push('/dashboard');
+        router.push('/');
       } else {
         setToast({message: 'Registration successful! Please login.', type: 'success'});
         setTimeout(() => {

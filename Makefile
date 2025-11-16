@@ -24,3 +24,7 @@ install-all: setup-venv install-be install-fe
 # Run both frontend and backend
 dev:
 	make run-be & make run-fe
+
+# Seed database with sample data
+seed:
+	cd be && source .venv/bin/activate && python seed.py
