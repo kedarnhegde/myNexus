@@ -15,9 +15,32 @@ export default function Home() {
   const [connections, setConnections] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [filters, setFilters] = useState({gender: '', year: '', course: '', tag: ''});
+  const [yearFilter, setYearFilter] = useState('');
+  const [majorFilter, setMajorFilter] = useState('');
+  const [companyFilter, setCompanyFilter] = useState('');
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({username: '', email: '', oldPassword: '', newPassword: '', confirmPassword: ''});
   const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: 'success' | 'error' | 'info'}>({isOpen: false, title: '', message: '', type: 'info'});
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+
+  const getTagColor = (tag: string) => {
+    const colors: any = {
+      'Freshman': 'bg-blue-600', 'Sophomore': 'bg-green-600', 'Junior': 'bg-yellow-600', 
+      'Senior': 'bg-orange-600', 'Graduate': 'bg-purple-600', 'PhD': 'bg-pink-600', 'Alumni': 'bg-red-600',
+      'CS Major': 'bg-indigo-600', 'Business Major': 'bg-teal-600', 'Engineering Major': 'bg-cyan-600',
+      'Meta': 'bg-blue-500', 'Google': 'bg-red-500', 'Amazon': 'bg-orange-500', 
+      'Apple': 'bg-gray-500', 'Microsoft': 'bg-blue-400', 'Netflix': 'bg-red-600',
+      'Python': 'bg-blue-700', 'Java': 'bg-red-700', 'JavaScript': 'bg-yellow-500', 'React': 'bg-cyan-500',
+      'Machine Learning': 'bg-purple-500', 'Data Science': 'bg-green-700', 'Web Dev': 'bg-indigo-500',
+      'Mobile Dev': 'bg-teal-500', 'Cloud Computing': 'bg-sky-500', 'Cybersecurity': 'bg-red-800',
+      'Leadership': 'bg-amber-600', 'Teamwork': 'bg-lime-600', 'Public Speaking': 'bg-rose-600',
+      'Research': 'bg-violet-600', 'Hackathons': 'bg-fuchsia-600', 'Open Source': 'bg-emerald-600',
+      'Startups': 'bg-orange-700', 'Internship': 'bg-blue-800'
+    };
+    return colors[tag] || 'bg-gray-600';
+  };
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -40,11 +63,35 @@ export default function Home() {
     
     fetch(`http://localhost:3000/api/connections/${parsedUser.id}`)
       .then(res => res.json())
-      .then(data => setConnections(data))
+      .then(data => {
+        setConnections(data);
+        setPendingRequests(data.filter((c: any) => c.status === 'pending' && !c.is_sender));
+      })
+      .catch(err => console.error(err));
+    
+    // Load recommended users
+    fetch(`http://localhost:3000/api/users/recommended/${parsedUser.id}`)
+      .then(res => res.json())
+      .then(data => setSearchResults(data))
       .catch(err => console.error(err));
     
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    fetch(`http://localhost:3000/api/users/recommended/${user.id}`)
+      .then(res => res.json())
+      .then(data => {
+        let filtered = data;
+        if (yearFilter) filtered = filtered.filter((u: any) => u.tags?.includes(yearFilter));
+        if (majorFilter) filtered = filtered.filter((u: any) => u.tags?.includes(majorFilter));
+        if (companyFilter) filtered = filtered.filter((u: any) => u.tags?.includes(companyFilter));
+        setSearchResults(filtered);
+      })
+      .catch(err => console.error(err));
+  }, [yearFilter, majorFilter, companyFilter, user]);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -84,8 +131,8 @@ export default function Home() {
       const res = await fetch(`http://localhost:3000/api/connections/${user.id}`);
       const data = await res.json();
       setConnections(data);
-      setSearchResults([]);
-      setSearchQuery('');
+      setSearchResults(prev => prev.filter(u => u.id !== friendId));
+      setModal({isOpen: true, title: 'Success', message: 'Connection request sent!', type: 'success'});
     } catch (err) {
       console.error(err);
     }
@@ -296,21 +343,66 @@ export default function Home() {
                   Search
                 </button>
               </div>
+              
+              <div className="flex gap-3 mt-3">
+                <select
+                  value={yearFilter}
+                  onChange={(e) => setYearFilter(e.target.value)}
+                  className="px-4 py-2 bg-gray-900 text-white rounded-lg border border-gray-700 focus:outline-none"
+                >
+                  <option value="">All Years</option>
+                  <option value="Freshman">Freshman</option>
+                  <option value="Sophomore">Sophomore</option>
+                  <option value="Junior">Junior</option>
+                  <option value="Senior">Senior</option>
+                  <option value="Graduate">Graduate</option>
+                  <option value="PhD">PhD</option>
+                  <option value="Alumni">Alumni</option>
+                </select>
+                
+                <select
+                  value={majorFilter}
+                  onChange={(e) => setMajorFilter(e.target.value)}
+                  className="px-4 py-2 bg-gray-900 text-white rounded-lg border border-gray-700 focus:outline-none"
+                >
+                  <option value="">All Majors</option>
+                  <option value="CS Major">CS Major</option>
+                  <option value="Business Major">Business Major</option>
+                  <option value="Engineering Major">Engineering Major</option>
+                </select>
+                
+                <select
+                  value={companyFilter}
+                  onChange={(e) => setCompanyFilter(e.target.value)}
+                  className="px-4 py-2 bg-gray-900 text-white rounded-lg border border-gray-700 focus:outline-none"
+                >
+                  <option value="">All Companies</option>
+                  <option value="Meta">Meta</option>
+                  <option value="Google">Google</option>
+                  <option value="Amazon">Amazon</option>
+                  <option value="Apple">Apple</option>
+                  <option value="Microsoft">Microsoft</option>
+                  <option value="Netflix">Netflix</option>
+                </select>
+              </div>
               {searchResults.length > 0 && (
-                <div className="mt-4 space-y-2">
+                <div className="grid grid-cols-4 gap-4 mt-4">
                   {searchResults.map(result => (
-                    <div key={result.id} className="bg-gray-900 p-4 rounded-lg flex justify-between items-center">
-                      <div>
-                        <p className="text-white font-semibold">{result.username}</p>
-                        <p className="text-gray-400 text-sm">{result.email}</p>
+                    <div key={result.id} className="bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-800 transition" onClick={() => setSelectedUser(result)}>
+                      <img src={`https://ui-avatars.com/api/?name=${result.username}&size=300&background=random&color=fff&bold=true`} alt={result.username} className="w-full h-32 object-cover" />
+                      <div className="p-4">
+                        <p className="text-white font-semibold text-lg mb-3">{result.username}</p>
+                        {result.bio && <p className="text-gray-300 text-xs mb-3 line-clamp-2">{result.bio}</p>}
+                        {result.tags && result.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {result.tags.slice(0, 3).map((tag: string) => (
+                              <span key={tag} className={`px-2 py-1 text-white text-xs rounded ${getTagColor(tag)}`}>{tag}</span>
+                            ))}
+                            {result.tags.length > 3 && <span className="px-2 py-1 bg-gray-700 text-white text-xs rounded">+{result.tags.length - 3}</span>}
+                          </div>
+                        )}
+                        <button onClick={(e) => { e.stopPropagation(); handleSendRequest(result.id); }} className="w-full py-2 text-white rounded-lg text-sm font-medium" style={{backgroundColor: '#A6192E'}}>Connect</button>
                       </div>
-                      <button
-                        onClick={() => handleSendRequest(result.id)}
-                        className="px-4 py-2 text-white rounded-lg text-sm"
-                        style={{backgroundColor: '#A6192E'}}
-                      >
-                        Send Request
-                      </button>
                     </div>
                   ))}
                 </div>
@@ -581,6 +673,88 @@ export default function Home() {
         </div>
       </div>
       
+      {selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={() => setSelectedUser(null)}>
+          <div className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <div className="flex gap-4">
+                  <img src={`https://ui-avatars.com/api/?name=${selectedUser.username}&size=150&background=random&color=fff&bold=true`} alt={selectedUser.username} className="w-24 h-24 rounded-lg" />
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-2">{selectedUser.username}</h2>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {selectedUser.tags?.map((tag: string) => (
+                        <span key={tag} className={`px-3 py-1 text-white text-sm rounded ${getTagColor(tag)}`}>{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-white">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-3">About</h3>
+                  <p className="text-gray-300 mb-4">{selectedUser.bio || 'No bio available'}</p>
+                  
+                  <h3 className="text-lg font-semibold text-white mb-3">Availability</h3>
+                  <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                    <div className="grid grid-cols-7 gap-2 text-center">
+                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                        <div key={day} className="text-xs text-gray-400">{day}</div>
+                      ))}
+                      {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28].map(d => (
+                        <div key={d} className={`text-xs py-2 rounded ${[5,12,19,26].includes(d) ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}>{d}</div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-3">Green = Available for sessions</p>
+                  </div>
+
+                  <button onClick={(e) => { e.stopPropagation(); handleSendRequest(selectedUser.id); setSelectedUser(null); }} className="w-full py-3 text-white rounded-lg font-medium" style={{backgroundColor: '#A6192E'}}>Connect</button>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-3">Peer Reviews ({selectedUser.id % 3 + 2})</h3>
+                  <div className="space-y-3">
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex">
+                          {[1,2,3,4,5].map(s => <span key={s} className="text-yellow-400">★</span>)}
+                        </div>
+                        <span className="text-gray-400 text-sm">by @student{selectedUser.id + 1}</span>
+                      </div>
+                      <p className="text-gray-300 text-sm">Great study partner! Very knowledgeable and patient. Helped me ace my exam.</p>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex">
+                          {[1,2,3,4].map(s => <span key={s} className="text-yellow-400">★</span>)}<span className="text-gray-600">★</span>
+                        </div>
+                        <span className="text-gray-400 text-sm">by @student{selectedUser.id + 2}</span>
+                      </div>
+                      <p className="text-gray-300 text-sm">Really helpful with project work. Knows the material well and explains clearly.</p>
+                    </div>
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex">
+                          {[1,2,3,4,5].map(s => <span key={s} className="text-yellow-400">★</span>)}
+                        </div>
+                        <span className="text-gray-400 text-sm">by @student{selectedUser.id + 3}</span>
+                      </div>
+                      <p className="text-gray-300 text-sm">Awesome mentor! Made complex topics easy to understand. Highly recommend!</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Modal
         isOpen={modal.isOpen}
         onClose={() => setModal({...modal, isOpen: false})}

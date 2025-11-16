@@ -6,9 +6,10 @@ import os
 from dotenv import load_dotenv
 
 from database import SessionLocal, engine, get_db
-from models import Base, User, Post, PostLike, Comment, Message, Connection
+from models import Base, User, Post, PostLike, Comment, Message, Connection, UserProfile, Tag, UserTag, UserCourse
 from schemas import UserCreate, UserUpdate, User as UserSchema
 from auth_schemas import LoginRequest, LoginResponse
+from typing import Optional
 
 load_dotenv()
 
@@ -165,13 +166,111 @@ def get_messages(user_id: int, db: Session = Depends(get_db)):
     
     return list(user_messages.values())
 
-@app.get("/users/search/{query}")
-def search_users(query: str, current_user_id: int, db: Session = Depends(get_db)):
+@app.get("/users/recommended/{user_id}")
+def get_recommended_users(user_id: int, db: Session = Depends(get_db)):
+    # Get current user's tags
+    user_tags = db.query(Tag.id).join(UserTag).filter(UserTag.user_id == user_id).all()
+    user_tag_ids = [t[0] for t in user_tags]
+    
+    # Get all users except current user and already connected
+    connected_ids = db.query(Connection.friend_id).filter(
+        Connection.user_id == user_id
+    ).union(
+        db.query(Connection.user_id).filter(Connection.friend_id == user_id)
+    ).all()
+    connected_ids = [c[0] for c in connected_ids]
+    
     users = db.query(User).filter(
-        (User.username.like(f"%{query}%") | User.email.like(f"%{query}%")),
-        User.id != current_user_id
-    ).limit(10).all()
-    return [{"id": u.id, "username": u.username, "email": u.email} for u in users]
+        User.id != user_id,
+        ~User.id.in_(connected_ids) if connected_ids else True
+    ).all()
+    
+    result = []
+    for u in users:
+        profile = db.query(UserProfile).filter(UserProfile.user_id == u.id).first()
+        tags = db.query(Tag).join(UserTag).filter(UserTag.user_id == u.id).all()
+        courses = db.query(UserCourse).filter(UserCourse.user_id == u.id).all()
+        
+        # Count matching tags
+        matching_tags = sum(1 for t in tags if t.id in user_tag_ids)
+        
+        result.append({
+            "id": u.id,
+            "username": u.username,
+            "email": u.email,
+            "gender": profile.gender if profile else None,
+            "year": profile.year if profile else None,
+            "major": profile.major if profile else None,
+            "bio": profile.bio if profile else None,
+            "tags": [t.name for t in tags],
+            "courses": [c.course_code for c in courses],
+            "matching_tags": matching_tags
+        })
+    
+    # Sort by matching tags (descending)
+    result.sort(key=lambda x: x['matching_tags'], reverse=True)
+    return result[:20]
+
+@app.get("/users/search")
+def search_users(
+    current_user_id: int,
+    query: Optional[str] = None,
+    gender: Optional[str] = None,
+    year: Optional[str] = None,
+    course: Optional[str] = None,
+    tag: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    # Start with base query
+    users_query = db.query(User).filter(User.id != current_user_id)
+    
+    # Apply text search
+    if query:
+        users_query = users_query.filter(
+            (User.username.like(f"%{query}%")) | (User.email.like(f"%{query}%"))
+        )
+    
+    # Join with profile for filters
+    if gender or year:
+        users_query = users_query.join(UserProfile, User.id == UserProfile.user_id)
+        if gender:
+            users_query = users_query.filter(UserProfile.gender == gender)
+        if year:
+            users_query = users_query.filter(UserProfile.year == year)
+    
+    # Filter by course
+    if course:
+        users_query = users_query.join(UserCourse, User.id == UserCourse.user_id).filter(
+            UserCourse.course_code.like(f"%{course}%")
+        )
+    
+    # Filter by tag
+    if tag:
+        users_query = users_query.join(UserTag, User.id == UserTag.user_id).join(
+            Tag, UserTag.tag_id == Tag.id
+        ).filter(Tag.name == tag)
+    
+    users = users_query.limit(20).all()
+    
+    result = []
+    for u in users:
+        profile = db.query(UserProfile).filter(UserProfile.user_id == u.id).first()
+        tags = db.query(Tag).join(UserTag).filter(UserTag.user_id == u.id).all()
+        courses = db.query(UserCourse).filter(UserCourse.user_id == u.id).all()
+        
+        result.append({
+            "id": u.id,
+            "username": u.username,
+            "email": u.email,
+            "gender": profile.gender if profile else None,
+            "year": profile.year if profile else None,
+            "major": profile.major if profile else None,
+            "bio": profile.bio if profile else None,
+            "tags": [t.name for t in tags],
+            "courses": [c.course_code for c in courses]
+        })
+    
+    return result
 
 @app.post("/connections/")
 def send_friend_request(user_id: int, friend_id: int, db: Session = Depends(get_db)):
