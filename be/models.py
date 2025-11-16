@@ -56,3 +56,15 @@ class Connection(Base):
     friend_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     status = Column(String(20), default="pending")  # pending, accepted, rejected
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Club(Base):
+    __tablename__ = "clubs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    members = Column(Integer, default=0)
+    location = Column(String(255), nullable=False)
+    category = Column(String(100), nullable=False)
+    description = Column(Text, nullable=False)
+    url = Column(String(500), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

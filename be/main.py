@@ -6,7 +6,8 @@ import os
 from dotenv import load_dotenv
 
 from database import SessionLocal, engine, get_db
-from models import Base, User, Post, PostLike, Comment, Message, Connection
+from models import Base, User, Post, PostLike, Comment, Message, Connection, Club
+from clubs_api import router as clubs_router
 from schemas import UserCreate, UserUpdate, User as UserSchema
 from auth_schemas import LoginRequest, LoginResponse
 
@@ -23,6 +24,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(clubs_router, prefix="/api")
 
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()

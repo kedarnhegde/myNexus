@@ -18,6 +18,32 @@ export default function Home() {
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({username: '', email: '', oldPassword: '', newPassword: '', confirmPassword: ''});
   const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: 'success' | 'error' | 'info'}>({isOpen: false, title: '', message: '', type: 'info'});
+  const [eventModal, setEventModal] = useState<{isOpen: boolean, eventName: string, action: string}>({isOpen: false, eventName: '', action: ''});
+  const [userEvents, setUserEvents] = useState<{eventName: string, action: string, date: string}[]>([]);
+  const [registeredEvents, setRegisteredEvents] = useState<{[key: string]: string}>({});
+  const [connectedClubs, setConnectedClubs] = useState<string[]>([]);
+  const [clubs, setClubs] = useState<any[]>([]);
+  const [clubsLoading, setClubsLoading] = useState(false);
+  const [clubFilter, setClubFilter] = useState('All');
+
+  const handleClubConnect = (clubName: string, url: string) => {
+    window.open(url, '_blank');
+    setModal({isOpen: true, title: 'Success', message: `Successfully connected to ${clubName}!`, type: 'success'});
+  };
+
+  const getButtonText = (eventName: string, originalAction: string) => {
+    const registeredAction = registeredEvents[eventName];
+    if (!registeredAction) return originalAction;
+    
+    switch (registeredAction) {
+      case 'Register': return 'Registered';
+      case 'Join': return 'Joined';
+      case 'Get Tickets': return 'Purchased';
+      default: return originalAction;
+    }
+  };
+
+
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -42,6 +68,38 @@ export default function Home() {
       .then(res => res.json())
       .then(data => setConnections(data))
       .catch(err => console.error(err));
+    
+    setClubs([
+      {name: 'Computer Science Society', members: '250+', location: 'Engineering Building', category: 'Academic', description: 'Connect with fellow CS students and explore tech opportunities.', url: 'https://instagram.com/sdsu_css'},
+      {name: 'Business Student Association', members: '400+', location: 'Business Building', category: 'Academic', description: 'Network with business professionals and develop leadership skills.', url: 'https://instagram.com/sdsuba'},
+      {name: 'Aztec Gaming', members: '180+', location: 'Student Union', category: 'Recreation', description: 'Gaming community for all skill levels and platforms.', url: 'https://www.instagram.com/aztecgamingsdsu/'},
+      {name: 'Engineering Student Council', members: '320+', location: 'Engineering Building', category: 'Academic', description: 'Represent engineering students and organize professional events.', url: 'https://instagram.com/sdsu_esc'},
+      {name: 'Aztec Recreation Center', members: '500+', location: 'ARC', category: 'Recreation', description: 'Fitness classes, intramural sports, and outdoor adventures.', url: 'https://instagram.com/sdsurec'},
+      {name: 'Associated Students', members: '600+', location: 'Student Union', category: 'Government', description: 'Student government representing the voice of SDSU students.', url: 'https://instagram.com/as_sdsu'},
+      {name: 'Aztec Dance Team', members: '45+', location: 'Viejas Arena', category: 'Arts', description: 'Official dance team performing at athletic events and competitions.', url: 'https://instagram.com/aztecdanceteam'},
+      {name: 'Pre-Med Society', members: '300+', location: 'Life Sciences Building', category: 'Academic', description: 'Support pre-medical students with resources and networking.', url: 'https://instagram.com/sdsupremed'},
+      {name: 'Aztec Marching Band', members: '200+', location: 'Music Building', category: 'Arts', description: 'Perform at football games and represent SDSU with pride.', url: 'https://instagram.com/aztecmarchingband'},
+      {name: 'Surf Club', members: '150+', location: 'Beach Areas', category: 'Recreation', description: 'Catch waves and connect with fellow surfers in San Diego.', url: 'https://instagram.com/sdsusurfclub'},
+      {name: 'Accounting Society', members: '180+', location: 'Business Building', category: 'Academic', description: 'Professional development for accounting and finance students.', url: 'https://instagram.com/sdsuaccounting'},
+      {name: 'Aztec Cheerleaders', members: '30+', location: 'Viejas Arena', category: 'Recreation', description: 'Official cheerleading squad supporting Aztec athletics.', url: 'https://instagram.com/azteccheer'},
+      {name: 'Psychology Club', members: '220+', location: 'Psychology Building', category: 'Academic', description: 'Explore psychology careers and research opportunities.', url: 'https://instagram.com/sdsupsychclub'},
+      {name: 'Fraternity & Sorority Life', members: '2000+', location: 'Greek Row', category: 'Social', description: 'Join Greek life for leadership, service, and lifelong friendships.', url: 'https://instagram.com/sdsufsl'},
+      {name: 'Aztec Nights', members: '800+', location: 'Student Union', category: 'Social', description: 'Free weekend entertainment and activities for students.', url: 'https://www.instagram.com/aztecnightssdsu/'},
+      {name: 'International Student Center', members: '1200+', location: 'International Student Center', category: 'Cultural', description: 'Support and community for international students at SDSU.', url: 'https://instagram.com/sdsuisc'},
+      {name: 'Aztec Radio', members: '80+', location: 'Student Union', category: 'Media', description: 'Student-run radio station broadcasting music and campus news.', url: 'https://instagram.com/aztecradio'},
+      {name: 'Nursing Student Association', members: '280+', location: 'Nursing Building', category: 'Academic', description: 'Professional organization for nursing students and career development.', url: 'https://instagram.com/sdsunsa'},
+      {name: 'Outdoor Adventures', members: '350+', location: 'ARC', category: 'Recreation', description: 'Hiking, camping, and outdoor activities throughout California.', url: 'https://instagram.com/sdsuoutdooradventures'},
+      {name: 'MEChA', members: '120+', location: 'Student Union', category: 'Cultural', description: 'Chicano/Latino student movement promoting education and culture.', url: 'https://instagram.com/sdsu_mecha'},
+      {name: 'Sanskrit Club', members: '85+', location: 'Student Union', category: 'Cultural', description: 'Celebrate Sanskrit language and Indian culture through events and activities.', url: 'https://www.instagram.com/sanskritisdsu/'},
+      {name: 'APSA', members: '200+', location: 'Student Union', category: 'Cultural', description: 'Asian Pacific Student Alliance promoting cultural awareness and community.', url: 'https://www.instagram.com/apsasdsu/'},
+      {name: 'SDSU Research', members: '150+', location: 'Research Centers', category: 'Academic', description: 'Undergraduate research opportunities across all disciplines.', url: 'https://www.instagram.com/sdsuresearch/'},
+      {name: 'SDSU International', members: '800+', location: 'International Student Center', category: 'Cultural', description: 'Programs and support for international education and exchange.', url: 'https://www.instagram.com/sdsu_international/'},
+      {name: 'Club Baseball', members: '40+', location: 'Baseball Fields', category: 'Recreation', description: 'Competitive club baseball team representing SDSU in tournaments.', url: 'https://www.instagram.com/sdsuclubbaseball/'},
+      {name: 'AITP', members: '95+', location: 'Business Building', category: 'Academic', description: 'Association of Information Technology Professionals for tech careers.', url: 'https://www.instagram.com/sdsu_aitp/'},
+      {name: 'Aztec Womens Basketball', members: '15+', location: 'Viejas Arena', category: 'Recreation', description: 'Official womens basketball team representing SDSU in NCAA competition.', url: 'https://www.instagram.com/aztecwbb/'},
+      {name: 'Aztecs Rock Hunger', members: '300+', location: 'Campus Wide', category: 'Social', description: 'Student organization fighting food insecurity and supporting community.', url: 'https://www.instagram.com/aztecsrockhunger/'}
+    ]);
+    setClubsLoading(false);
     
     setLoading(false);
   }, []);
@@ -102,6 +160,22 @@ export default function Home() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleEventAction = (eventName: string, action: string) => {
+    setEventModal({isOpen: true, eventName, action});
+  };
+
+  const confirmEventAction = () => {
+    const newEvent = {
+      eventName: eventModal.eventName,
+      action: eventModal.action,
+      date: new Date().toLocaleDateString()
+    };
+    setUserEvents(prev => [...prev, newEvent]);
+    setRegisteredEvents(prev => ({...prev, [eventModal.eventName]: eventModal.action}));
+    setModal({isOpen: true, title: 'Success', message: `Successfully ${eventModal.action.toLowerCase()}ed for ${eventModal.eventName}!`, type: 'success'});
+    setEventModal({isOpen: false, eventName: '', action: ''});
   };
 
   const handleUpdateProfile = async () => {
@@ -214,6 +288,13 @@ export default function Home() {
             <span className="font-medium text-white">Events</span>
           </button>
           
+          <button onClick={() => setActiveSection('clubs')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'clubs' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
+              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+            </svg>
+            <span className="font-medium text-white">Clubs</span>
+          </button>
+          
           <button onClick={() => setActiveSection('courses')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'courses' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
             <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
               <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
@@ -248,7 +329,7 @@ export default function Home() {
 
       <div className="flex-1 p-6 overflow-y-auto">
         <h2 className="text-2xl font-bold mb-6 text-white">
-          {activeSection === 'home' ? 'Home' : activeSection === 'peer' ? 'Peer Connect' : activeSection === 'events' ? 'Events' : activeSection === 'courses' ? 'Course Compass' : activeSection === 'messages' ? 'Messages' : 'Profile'}
+          {activeSection === 'home' ? 'Home' : activeSection === 'peer' ? 'Peer Connect' : activeSection === 'events' ? 'Events' : activeSection === 'clubs' ? 'Clubs' : activeSection === 'courses' ? 'Course Compass' : activeSection === 'messages' ? 'Messages' : 'Profile'}
         </h2>
         
         {activeSection === 'home' && (
@@ -344,57 +425,93 @@ export default function Home() {
         
         {activeSection === 'events' && (
           <div className="space-y-4">
-            <div className="bg-gray-900 rounded-lg p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-white mb-2">SDSU Career Fair 2024</h3>
-                  <p className="text-gray-400 text-sm">📅 March 15, 2024 • 10:00 AM - 4:00 PM</p>
-                  <p className="text-gray-400 text-sm">📍 Montezuma Hall</p>
+            {[
+              {name: 'Social Venture Challenge 2026', date: 'October 1 – December 12, 2025 • 12:00 AM - 11:59 PM', location: 'University Library', description: 'Apply to the Social Venture Challenge 2026! Zip Launchpad Calendar', action: 'Register', tag: 'Competition', color: 'rgba(166, 25, 46, 0.2)'},
+              {name: 'Care and Custody: Past Responses to Mental Health', date: 'October 20 – November 25, 2025 • 9:00 AM - 5:00 PM', location: 'Love Library 2nd floor elevator lobby', description: 'Exhibition exploring historical responses to mental health care and custody.', action: 'Join', tag: 'Exhibition', color: 'rgba(59, 130, 246, 0.2)'},
+              {name: 'Bryan Adams Concert', date: 'Sunday, November 16, 2025 • 7:30 PM - 11:00 PM', location: 'Viejas Arena', description: 'Bryan Adams live in concert at Viejas Arena. Tickets on sale now!', action: 'Get Tickets', tag: 'Concert', color: 'rgba(236, 72, 153, 0.2)'},
+              {name: 'International Student Virtual Open Advising Hours', date: 'Monday, November 17, 2025 • 10:00 AM - 11:30 AM', location: 'Virtual', description: 'Open advising hours for international students via virtual platform.', action: 'Join', tag: 'Advising', color: 'rgba(168, 85, 247, 0.2)'},
+              {name: 'GEO CoEng/CoS Getting Started Session', date: 'Monday, November 17, 2025 • 10:00 AM - 11:00 AM', location: 'SDSU Engineering Building E203-E', description: 'Global Education Office session for College of Engineering and Sciences students.', action: 'Register', tag: 'Academic', color: 'rgba(59, 130, 246, 0.2)'},
+              {name: 'Queer Crafternoon', date: 'Monday, November 17, 2025 • 12:00 PM - 1:00 PM', location: 'The Pride Center Multipurpose Room', description: 'Creative crafting session hosted by the Pride Center.', action: 'Join', tag: 'Social', color: 'rgba(245, 158, 11, 0.2)'},
+              {name: 'GEO CAL/COE Getting Started Session for Study Abroad', date: 'Monday, November 17, 2025 • 3:00 PM - 4:00 PM', location: 'Online virtual event', description: 'Study abroad information session for College of Arts and Letters and College of Education.', action: 'Register', tag: 'Study Abroad', color: 'rgba(168, 85, 247, 0.2)'},
+              {name: 'Meet the Author: Thien Pham', date: 'Monday, November 17, 2025 • 4:00 PM - 5:00 PM', location: 'APIDA Center', description: 'Author meet and greet event at the APIDA Center.', action: 'Join', tag: 'Literary', color: 'rgba(245, 158, 11, 0.2)'},
+              {name: 'GraduAte', date: 'Monday, November 17, 2025 • 4:30 PM - 5:30 PM', location: 'The Pride Center Multipurpose Room', description: 'Graduate student support group at the Pride Center.', action: 'Join', tag: 'Graduate', color: 'rgba(34, 197, 94, 0.2)'},
+              {name: 'Revision and Editing Strategies for Graduate Writers', date: 'Monday, November 17, 2025 • 5:00 PM - 6:00 PM', location: 'Zoom', description: 'Workshop on writing strategies for graduate students via Zoom.', action: 'Register', tag: 'Workshop', color: 'rgba(166, 25, 46, 0.2)'},
+              {name: 'Fowler GEO Drop In Advising', date: 'Tuesday, November 18, 2025 • 10:00 AM - 11:30 AM', location: 'Lamden Hall Rm 419', description: 'Drop-in advising for Fowler College students interested in global education.', action: 'Join', tag: 'Advising', color: 'rgba(168, 85, 247, 0.2)'},
+              {name: 'SDSU Student Symposium (S3) Information Session', date: 'Tuesday, November 18, 2025 • 10:00 AM - 12:00 PM', location: 'SDSU Imperial Valley Library', description: 'Information session about the Student Symposium. Free event.', action: 'Register', tag: 'Research', color: 'rgba(59, 130, 246, 0.2)'},
+              {name: 'Free HIV Testing', date: 'Tuesday, November 18, 2025 • 11:00 AM - 4:00 PM', location: 'The Pride Center', description: 'Free HIV testing services provided at the Pride Center.', action: 'Join', tag: 'Health', color: 'rgba(34, 197, 94, 0.2)'},
+              {name: 'Beyond Borders: International Student Employment Session', date: 'Tuesday, November 18, 2025 • 12:00 PM - 2:00 PM', location: 'Career Services SSE 1200', description: 'Employment guidance session for international students.', action: 'Register', tag: 'Career', color: 'rgba(166, 25, 46, 0.2)'},
+              {name: 'Black Womens Healing Circle', date: 'Tuesday, November 18, 2025 • 1:00 PM - 2:00 PM', location: 'Black Resource Center', description: 'Healing circle for Black women at the Black Resource Center.', action: 'Join', tag: 'Wellness', color: 'rgba(34, 197, 94, 0.2)'},
+              {name: 'Trans4', date: 'Tuesday, November 18, 2025 • 1:30 PM - 2:30 PM', location: 'The Pride Center Multipurpose Room', description: 'Support group for transgender students at the Pride Center.', action: 'Join', tag: 'Support', color: 'rgba(245, 158, 11, 0.2)'},
+              {name: 'Getting Unstuck: A C&PS Drop-In Group', date: 'Tuesday, November 18, 2025 • 3:00 PM - 4:15 PM', location: 'Calpulli Center Conference Room 4', description: 'Free drop-in counseling group for students feeling stuck.', action: 'Join', tag: 'Counseling', color: 'rgba(34, 197, 94, 0.2)'},
+              {name: 'Gender Journey', date: 'Tuesday, November 18, 2025 • 3:30 PM - 4:30 PM', location: 'The Pride Center Multipurpose Room', description: 'Support group for students exploring gender identity.', action: 'Join', tag: 'Support', color: 'rgba(245, 158, 11, 0.2)'},
+              {name: 'Aztec Mens Basketball vs Troy', date: 'Tuesday, November 18, 2025 • 7:00 PM - 9:30 PM', location: 'Viejas Arena', description: 'Aztec Mens Basketball game against Troy. Free with student tickets.', action: 'Get Tickets', tag: 'Sports', color: 'rgba(16, 185, 129, 0.2)'},
+              {name: 'Global Education Fair', date: 'Wednesday, November 19, 2025 • 10:00 AM - 2:00 PM', location: 'Centennial Walkway', description: 'Learn about global education opportunities and study abroad programs.', action: 'Join', tag: 'Education', color: 'rgba(168, 85, 247, 0.2)'}
+            ].map((event, index) => (
+              <div key={index} className="bg-gray-900 rounded-lg p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-2">{event.name}</h3>
+                    <p className="text-gray-400 text-sm">📅 {event.date}</p>
+                    <p className="text-gray-400 text-sm">📍 {event.location}</p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-medium" style={{backgroundColor: event.color, color: event.tag === 'Free Entry' ? '#10B981' : '#A6192E'}}>{event.tag}</span>
                 </div>
-                <span className="px-3 py-1 rounded-full text-xs font-medium" style={{backgroundColor: 'rgba(166, 25, 46, 0.2)', color: '#A6192E'}}>Upcoming</span>
+                <p className="text-gray-300 mb-4">{event.description}</p>
+                <button 
+                  onClick={() => !registeredEvents[event.name] && handleEventAction(event.name, event.action)} 
+                  className="px-4 py-2 text-white rounded-lg text-sm" 
+                  style={{backgroundColor: registeredEvents[event.name] ? '#666' : '#A6192E', cursor: registeredEvents[event.name] ? 'default' : 'pointer'}}
+                  disabled={!!registeredEvents[event.name]}
+                >
+                  {getButtonText(event.name, event.action)}
+                </button>
               </div>
-              <p className="text-gray-300 mb-4">Connect with top employers and explore career opportunities. Bring your resume!</p>
-              <button className="px-4 py-2 text-white rounded-lg text-sm" style={{backgroundColor: '#A6192E'}}>Register</button>
+            ))}
+          </div>
+        )}
+        
+        {activeSection === 'clubs' && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2 mb-6">
+              {['All', 'Academic', 'Arts', 'Recreation', 'Social', 'Cultural', 'Government', 'Media'].map(filter => (
+                <button
+                  key={filter}
+                  onClick={() => setClubFilter(filter)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition"
+                  style={{
+                    backgroundColor: clubFilter === filter ? '#A6192E' : 'transparent',
+                    color: clubFilter === filter ? 'white' : '#A6192E',
+                    border: '1px solid #A6192E'
+                  }}
+                >
+                  {filter}
+                </button>
+              ))}
             </div>
-            
-            <div className="bg-gray-900 rounded-lg p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-white mb-2">Study Group: CS 310</h3>
-                  <p className="text-gray-400 text-sm">📅 March 10, 2024 • 6:00 PM - 8:00 PM</p>
-                  <p className="text-gray-400 text-sm">📍 Library Room 204</p>
+            {clubsLoading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400">Loading clubs...</p>
+              </div>
+            ) : clubs.filter(club => clubFilter === 'All' || club.category === clubFilter).map((club, index) => (
+              <div key={index} className="bg-gray-900 rounded-lg p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-2">{club.name}</h3>
+                    <p className="text-gray-400 text-sm">👥 {club.members} members</p>
+                    <p className="text-gray-400 text-sm">📍 {club.location}</p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-xs font-medium" style={{backgroundColor: 'rgba(166, 25, 46, 0.2)', color: '#A6192E'}}>{club.category}</span>
                 </div>
-                <span className="px-3 py-1 rounded-full text-xs font-medium" style={{backgroundColor: 'rgba(166, 25, 46, 0.2)', color: '#A6192E'}}>This Week</span>
+                <p className="text-gray-300 mb-4">{club.description}</p>
+                <button 
+                  onClick={() => handleClubConnect(club.name, club.url)}
+                  className="px-4 py-2 text-white rounded-lg text-sm" 
+                  style={{backgroundColor: '#A6192E'}}
+                >
+                  Connect
+                </button>
               </div>
-              <p className="text-gray-300 mb-4">Join us for a collaborative study session covering data structures and algorithms.</p>
-              <button className="px-4 py-2 text-white rounded-lg text-sm" style={{backgroundColor: '#A6192E'}}>Join</button>
-            </div>
-            
-            <div className="bg-gray-900 rounded-lg p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-white mb-2">Aztec Basketball Game</h3>
-                  <p className="text-gray-400 text-sm">📅 March 12, 2024 • 7:00 PM</p>
-                  <p className="text-gray-400 text-sm">📍 Viejas Arena</p>
-                </div>
-                <span className="px-3 py-1 rounded-full text-xs font-medium" style={{backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#10B981'}}>Free Entry</span>
-              </div>
-              <p className="text-gray-300 mb-4">Cheer on the Aztecs! Free entry for students with valid ID.</p>
-              <button className="px-4 py-2 text-white rounded-lg text-sm" style={{backgroundColor: '#A6192E'}}>Get Tickets</button>
-            </div>
-            
-            <div className="bg-gray-900 rounded-lg p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-white mb-2">Tech Workshop: Web Development</h3>
-                  <p className="text-gray-400 text-sm">📅 March 18, 2024 • 3:00 PM - 5:00 PM</p>
-                  <p className="text-gray-400 text-sm">📍 Engineering Building 101</p>
-                </div>
-                <span className="px-3 py-1 rounded-full text-xs font-medium" style={{backgroundColor: 'rgba(166, 25, 46, 0.2)', color: '#A6192E'}}>Workshop</span>
-              </div>
-              <p className="text-gray-300 mb-4">Learn modern web development with React and Next.js. Laptops required.</p>
-              <button className="px-4 py-2 text-white rounded-lg text-sm" style={{backgroundColor: '#A6192E'}}>Register</button>
-            </div>
+            ))}
           </div>
         )}
         
@@ -526,6 +643,29 @@ export default function Home() {
                 )}
               </div>
             </div>
+            
+            <div className="bg-gray-900 rounded-lg p-6 space-y-4 mt-6">
+              <h3 className="text-lg font-semibold text-white">Upcoming Events</h3>
+              {userEvents.length === 0 ? (
+                <p className="text-gray-400">No upcoming events</p>
+              ) : (
+                <div className="space-y-3">
+                  {userEvents.filter(event => event.action !== 'Join').map((event, index) => (
+                    <div key={index} className="bg-gray-800 rounded-lg p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-white font-medium">{event.eventName}</p>
+                          <p className="text-gray-400 text-sm">{event.action} on {event.date}</p>
+                        </div>
+                        <span className="px-2 py-1 rounded text-xs" style={{backgroundColor: 'rgba(166, 25, 46, 0.2)', color: '#A6192E'}}>
+                          {event.action}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -588,6 +728,30 @@ export default function Home() {
         message={modal.message}
         type={modal.type}
       />
+      
+      {eventModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-white mb-4">{eventModal.action} for Event</h3>
+            <p className="text-gray-300 mb-6">Are you sure you want to {eventModal.action.toLowerCase()} for "{eventModal.eventName}"?</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setEventModal({isOpen: false, eventName: '', action: ''})}
+                className="px-4 py-2 bg-gray-700 text-white rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEventAction}
+                className="px-4 py-2 text-white rounded-lg"
+                style={{backgroundColor: '#A6192E'}}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
