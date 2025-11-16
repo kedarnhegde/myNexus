@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from database import SessionLocal, engine, get_db
 from models import Base, User, Post, PostLike, Comment, Message, Connection, UserProfile, Tag, UserTag, UserCourse
-from schemas import UserCreate, UserUpdate, User as UserSchema
+from schemas import UserCreate, UserUpdate, User as UserSchema, PostCreate
 from auth_schemas import LoginRequest, LoginResponse
 from typing import Optional
 

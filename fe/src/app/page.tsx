@@ -24,6 +24,32 @@ export default function Home() {
   const [profileData, setProfileData] = useState({username: '', email: '', oldPassword: '', newPassword: '', confirmPassword: ''});
   const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: 'success' | 'error' | 'info'}>({isOpen: false, title: '', message: '', type: 'info'});
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [newPost, setNewPost] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('general');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [showComments, setShowComments] = useState<{[key: number]: boolean}>({});
+  const [comments, setComments] = useState<{[key: number]: any[]}>({});
+  const [newComment, setNewComment] = useState<{[key: number]: string}>({});
+  
+  const categories = [
+    { value: 'general', label: 'General', icon: '💬' },
+    { value: 'academic', label: 'Academic', icon: '📚' },
+    { value: 'social', label: 'Social', icon: '🎉' },
+    { value: 'jobs', label: 'Jobs/Internships', icon: '💼' },
+    { value: 'housing', label: 'Housing', icon: '🏠' },
+    { value: 'events', label: 'Events', icon: '📅' }
+  ];
+  
+  const fetchPosts = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/posts/?category=${filterCategory}&user_id=${user?.id || ''}`);
+      const data = await res.json();
+      setPosts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setPosts([]);
+    }
+  };
 
   const getTagColor = (tag: string) => {
     const colors: any = {
@@ -67,7 +93,7 @@ export default function Home() {
       .catch(err => console.error(err));
     
     // Load recommended users
-    fetch(`http://localhost:3000/api/users/recommended/${parsedUser.id}`)
+    fetch(`http://localhost:8000/users/recommended/${parsedUser.id}`)
       .then(res => res.json())
       .then(data => setSearchResults(data))
       .catch(err => console.error(err));
@@ -78,7 +104,7 @@ export default function Home() {
   useEffect(() => {
     if (!user) return;
     
-    fetch(`http://localhost:3000/api/users/recommended/${user.id}`)
+    fetch(`http://localhost:8000/users/recommended/${user.id}`)
       .then(res => res.json())
       .then(data => {
         let filtered = data;
@@ -89,6 +115,12 @@ export default function Home() {
       })
       .catch(err => console.error(err));
   }, [yearFilter, majorFilter, companyFilter, user]);
+  
+  useEffect(() => {
+    if (user) {
+      fetchPosts();
+    }
+  }, [filterCategory, user]);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
