@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean, Float
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean, UniqueConstraint
 from sqlalchemy.sql import func
 from database import Base
 
@@ -18,15 +18,18 @@ class Post(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)
+    category = Column(String(50), default="general")
     likes_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class PostLike(Base):
     __tablename__ = "post_likes"
+    __table_args__ = (UniqueConstraint('post_id', 'user_id', name='unique_user_post_vote'),)
 
     id = Column(Integer, primary_key=True, index=True)
     post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    value = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Comment(Base):
@@ -57,82 +60,38 @@ class Connection(Base):
     status = Column(String(20), default="pending")  # pending, accepted, rejected
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-class Professor(Base):
-    __tablename__ = "professors"
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=False, index=True)
-    department = Column(String(100), nullable=False, index=True)
-    email = Column(String(255))
-    avg_rating = Column(Float, default=0.0)
-    total_reviews = Column(Integer, default=0)
-    would_take_again_percent = Column(Float, default=0.0)
-    avg_difficulty = Column(Float, default=0.0)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    gender = Column(String(20))
+    year = Column(String(20))  # freshman, sophomore, junior, senior, graduate
+    major = Column(String(100))
+    bio = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-class Course(Base):
-    __tablename__ = "courses"
+class Tag(Base):
+    __tablename__ = "tags"
 
     id = Column(Integer, primary_key=True, index=True)
-    code = Column(String(20), nullable=False, index=True)  # e.g., CS-101
-    title = Column(String(255), nullable=False, index=True)
-    department = Column(String(100), nullable=False, index=True)
-    description = Column(Text)
-    credits = Column(Integer, default=3)
+    name = Column(String(50), unique=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-class CourseSection(Base):
-    __tablename__ = "course_sections"
-
-    id = Column(Integer, primary_key=True, index=True)
-    course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
-    professor_id = Column(Integer, ForeignKey("professors.id"), nullable=False)
-    section_number = Column(String(10), nullable=False)
-    semester = Column(String(20), nullable=False)  # e.g., Fall 2024
-    schedule = Column(String(100))  # e.g., MWF 10:00-11:00
-    location = Column(String(100))
-    syllabus_url = Column(String(500))
-    exam_format = Column(String(50))  # midterm+final, project-based, etc.
-    grading_style = Column(String(50))  # curve, absolute, etc.
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-class Review(Base):
-    __tablename__ = "reviews"
+class UserTag(Base):
+    __tablename__ = "user_tags"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    section_id = Column(Integer, ForeignKey("course_sections.id"), nullable=False)
-    rating = Column(Float, nullable=False)  # 1-5
-    difficulty = Column(Float, nullable=False)  # 1-5
-    workload = Column(Float, nullable=False)  # 1-5 (hours per week)
-    would_take_again = Column(Boolean, nullable=False)
-    grade_received = Column(String(5))  # A, B+, etc.
-    attendance_mandatory = Column(Boolean)
-    textbook_required = Column(Boolean)
-    content = Column(Text, nullable=False)
-    tags = Column(String(500))  # comma-separated: exam-heavy,project-based,etc.
-    helpful_count = Column(Integer, default=0)
+    tag_id = Column(Integer, ForeignKey("tags.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-class Question(Base):
-    __tablename__ = "questions"
+class UserCourse(Base):
+    __tablename__ = "user_courses"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    section_id = Column(Integer, ForeignKey("course_sections.id"), nullable=False)
-    title = Column(String(255), nullable=False)
-    content = Column(Text, nullable=False)
-    upvotes = Column(Integer, default=0)
-    answer_count = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-class Answer(Base):
-    __tablename__ = "answers"
-
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    question_id = Column(Integer, ForeignKey("questions.id"), nullable=False)
-    content = Column(Text, nullable=False)
-    upvotes = Column(Integer, default=0)
-    is_accepted = Column(Boolean, default=False)
+    course_code = Column(String(20), nullable=False)  # e.g., CS 576
+    course_name = Column(String(200))
+    semester = Column(String(20))  # e.g., Fall 2023
     created_at = Column(DateTime(timezone=True), server_default=func.now())

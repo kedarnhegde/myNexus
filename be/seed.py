@@ -1,21 +1,52 @@
 import bcrypt
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from database import SessionLocal, engine
-from models import Base, User, Post, Message, Connection, Professor, Course, CourseSection, Review, Question
-import random
+from models import Base, User, Post, Message, Connection, UserProfile, Tag, UserTag, UserCourse, PostLike, Comment
 
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def seed_database():
+    print("Dropping all tables...")
+    Base.metadata.drop_all(bind=engine)
+    print("Creating all tables...")
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     
     try:
+        print("Clearing existing data...")
+        db.query(UserCourse).delete()
+        db.query(UserTag).delete()
+        db.query(Tag).delete()
+        db.query(UserProfile).delete()
+        db.query(Connection).delete()
+        db.query(Message).delete()
+        db.query(PostLike).delete()
+        db.query(Comment).delete()
+        db.query(Post).delete()
+        db.query(User).delete()
+        db.commit()
+        
+        # Reset auto-increment IDs
+        print("Resetting auto-increment IDs...")
+        db.execute(text("ALTER TABLE users AUTO_INCREMENT = 1"))
+        db.execute(text("ALTER TABLE posts AUTO_INCREMENT = 1"))
+        db.execute(text("ALTER TABLE messages AUTO_INCREMENT = 1"))
+        db.execute(text("ALTER TABLE connections AUTO_INCREMENT = 1"))
+        db.execute(text("ALTER TABLE user_profiles AUTO_INCREMENT = 1"))
+        db.execute(text("ALTER TABLE tags AUTO_INCREMENT = 1"))
+        db.execute(text("ALTER TABLE user_tags AUTO_INCREMENT = 1"))
+        db.execute(text("ALTER TABLE user_courses AUTO_INCREMENT = 1"))
+        db.execute(text("ALTER TABLE post_likes AUTO_INCREMENT = 1"))
+        db.execute(text("ALTER TABLE comments AUTO_INCREMENT = 1"))
+        db.commit()
+        print("Auto-increment IDs reset.")
+        
         # Create 16 users
         users_data = [
-            ("john.doe@sdsu.edu", "johndoe", "password123"),
+            ("kedar@sdsu.edu", "kedar", "kedar"),
             ("jane.smith@sdsu.edu", "janesmith", "password123"),
             ("mike.johnson@sdsu.edu", "mikej", "password123"),
             ("sarah.williams@sdsu.edu", "sarahw", "password123"),
@@ -35,13 +66,18 @@ def seed_database():
         
         users = []
         for email, username, password in users_data:
-            user = User(
-                email=email,
-                username=username,
-                password_hash=hash_password(password)
-            )
-            db.add(user)
-            users.append(user)
+            # Check if user already exists
+            existing_user = db.query(User).filter(User.email == email).first()
+            if not existing_user:
+                user = User(
+                    email=email,
+                    username=username,
+                    password_hash=hash_password(password)
+                )
+                db.add(user)
+                users.append(user)
+            else:
+                users.append(existing_user)
         
         db.commit()
         
@@ -49,29 +85,87 @@ def seed_database():
         for user in users:
             db.refresh(user)
         
-        # Create posts
+        # Create posts with categories
+        # Create posts with categories
         posts_data = [
-            (users[0].id, "Just finished my midterms! Time to relax 🎉", 15),
-            (users[1].id, "Looking for study partners for CS 310. Anyone interested?", 8),
-            (users[2].id, "The new library hours are amazing! Open till midnight now 📚", 23),
-            (users[3].id, "Does anyone know when registration opens for Spring semester?", 5),
-            (users[4].id, "Great game last night! Go Aztecs! 🏈", 42),
-            (users[5].id, "Coffee study session at Starbucks tomorrow at 3pm. Join us!", 12),
-            (users[6].id, "Need help with calculus homework. Anyone free?", 7),
-            (users[7].id, "The campus food trucks are back! 🌮", 18),
-            (users[8].id, "Looking for a roommate for next semester. DM me!", 9),
-            (users[9].id, "Just got accepted into the honors program! 🎓", 31),
-            (users[10].id, "Anyone going to the career fair next week?", 14),
-            (users[11].id, "Best study spots on campus? Need recommendations", 11),
-            (users[12].id, "Selling textbooks for ECON 101. Like new condition!", 6),
-            (users[13].id, "Who else is excited for spring break? ☀️", 28),
-            (users[14].id, "Free tutoring sessions at the library every Tuesday!", 19),
-            (users[15].id, "Lost my student ID near the gym. Please help!", 4)
+            (users[0].id, "Just finished my midterms! Time to relax 🎉", "general"),
+            (users[1].id, "Looking for study partners for CS 310. Anyone interested?", "academic"),
+            (users[2].id, "The new library hours are amazing! Open till midnight now 📚", "general"),
+            (users[3].id, "Does anyone know when registration opens for Spring semester?", "academic"),
+            (users[4].id, "Great game last night! Go Aztecs! 🏈", "social"),
+            (users[5].id, "Coffee study session at Starbucks tomorrow at 3pm. Join us!", "social"),
+            (users[6].id, "Need help with calculus homework. Anyone free?", "academic"),
+            (users[7].id, "The campus food trucks are back! 🌮", "general"),
+            (users[8].id, "Looking for a roommate for next semester. DM me!", "housing"),
+            (users[9].id, "Just got accepted into the honors program! 🎓", "general"),
+            (users[10].id, "Anyone going to the career fair next week?", "jobs"),
+            (users[11].id, "Best study spots on campus? Need recommendations", "general"),
+            (users[12].id, "Selling textbooks for ECON 101. Like new condition!", "general"),
+            (users[13].id, "Who else is excited for spring break? ☀️", "social"),
+            (users[14].id, "Free tutoring sessions at the library every Tuesday!", "academic"),
+            (users[15].id, "Lost my student ID near the gym. Please help!", "general"),
+            (users[0].id, "Software Engineering internship at Meta - Apply now!", "jobs"),
+            (users[2].id, "Study abroad info session this Friday at 3pm", "events"),
+            (users[5].id, "2BR apartment available near campus. $1200/month", "housing"),
+            (users[7].id, "Aztec basketball game tonight! Who's going?", "events")
         ]
         
-        for user_id, content, likes in posts_data:
-            post = Post(user_id=user_id, content=content, likes_count=likes)
+        posts = []
+        for user_id, content, category in posts_data:
+            post = Post(user_id=user_id, content=content, category=category)
             db.add(post)
+            posts.append(post)
+        
+        db.commit()
+        
+        for post in posts:
+            db.refresh(post)
+        
+        # Create comments
+        comments_data = [
+            (posts[0].id, users[1].id, "Congrats! You deserve it!"),
+            (posts[0].id, users[2].id, "Same here! Finally done with exams 🎉"),
+            (posts[1].id, users[0].id, "I'm in! Let's meet at the library tomorrow."),
+            (posts[1].id, users[3].id, "Count me in too!"),
+            (posts[2].id, users[4].id, "This is awesome! No more rushing to leave."),
+            (posts[4].id, users[5].id, "What a game! The energy was incredible!"),
+            (posts[4].id, users[6].id, "Best game of the season!"),
+            (posts[4].id, users[7].id, "Go Aztecs! 🏈"),
+            (posts[9].id, users[8].id, "Congratulations! That's amazing!"),
+            (posts[10].id, users[9].id, "Yes! I'll be there. Great networking opportunity."),
+            (posts[13].id, users[10].id, "Can't wait! Beach time! 🏖️"),
+            (posts[13].id, users[11].id, "Already booked my flight home!"),
+        ]
+        
+        for post_id, user_id, content in comments_data:
+            comment = Comment(post_id=post_id, user_id=user_id, content=content)
+            db.add(comment)
+        
+        db.commit()
+        
+        # Create votes (upvotes and downvotes)
+        votes_data = [
+            (posts[0].id, users[1].id, 1), (posts[0].id, users[2].id, 1), (posts[0].id, users[3].id, 1),
+            (posts[1].id, users[0].id, 1), (posts[1].id, users[2].id, 1),
+            (posts[2].id, users[0].id, 1), (posts[2].id, users[1].id, 1), (posts[2].id, users[4].id, 1), (posts[2].id, users[5].id, 1),
+            (posts[3].id, users[1].id, 1), (posts[3].id, users[2].id, -1),
+            (posts[4].id, users[0].id, 1), (posts[4].id, users[1].id, 1), (posts[4].id, users[5].id, 1), (posts[4].id, users[6].id, 1), (posts[4].id, users[7].id, 1),
+            (posts[5].id, users[0].id, 1), (posts[5].id, users[3].id, 1),
+            (posts[6].id, users[1].id, 1), (posts[6].id, users[2].id, -1),
+            (posts[7].id, users[0].id, 1), (posts[7].id, users[3].id, 1), (posts[7].id, users[4].id, 1),
+            (posts[8].id, users[1].id, 1), (posts[8].id, users[2].id, 1),
+            (posts[9].id, users[0].id, 1), (posts[9].id, users[1].id, 1), (posts[9].id, users[8].id, 1), (posts[9].id, users[9].id, 1),
+            (posts[10].id, users[0].id, 1), (posts[10].id, users[9].id, 1), (posts[10].id, users[10].id, 1),
+            (posts[11].id, users[0].id, 1), (posts[11].id, users[2].id, 1),
+            (posts[12].id, users[1].id, 1), (posts[12].id, users[3].id, -1),
+            (posts[13].id, users[0].id, 1), (posts[13].id, users[10].id, 1), (posts[13].id, users[11].id, 1), (posts[13].id, users[12].id, 1),
+            (posts[14].id, users[0].id, 1), (posts[14].id, users[1].id, 1), (posts[14].id, users[2].id, 1),
+            (posts[15].id, users[1].id, 1), (posts[15].id, users[2].id, -1),
+        ]
+        
+        for post_id, user_id, value in votes_data:
+            vote = PostLike(post_id=post_id, user_id=user_id, value=value)
+            db.add(vote)
         
         db.commit()
         
@@ -121,161 +215,91 @@ def seed_database():
         
         db.commit()
         
-        # Seed CourseCompass data
-        professors_data = [
-            ("Dr. Sarah Johnson", "Computer Science", "sjohnson@sdsu.edu"),
-            ("Dr. Michael Chen", "Computer Science", "mchen@sdsu.edu"),
-            ("Dr. Emily Rodriguez", "Computer Science", "erodriguez@sdsu.edu"),
-            ("Dr. James Wilson", "Mathematics", "jwilson@sdsu.edu"),
-            ("Dr. Lisa Anderson", "Mathematics", "landerson@sdsu.edu"),
-            ("Dr. Robert Taylor", "Business", "rtaylor@sdsu.edu"),
-            ("Dr. Maria Garcia", "Engineering", "mgarcia@sdsu.edu"),
-            ("Dr. David Kim", "Psychology", "dkim@sdsu.edu"),
-            ("Dr. Jennifer Lee", "Biology", "jlee@sdsu.edu"),
-            ("Dr. Thomas Brown", "Computer Science", "tbrown@sdsu.edu"),
+        # Create user profiles
+        genders = ["Male", "Female", "Non-binary", "Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female", "Male"]
+        years = ["Freshman", "Sophomore", "Junior", "Senior", "Graduate", "Sophomore", "Junior", "Senior", "Freshman", "Junior", "Senior", "Sophomore", "Junior", "Senior", "Graduate", "Freshman"]
+        majors = ["Computer Science", "Business", "Engineering", "Psychology", "Biology", "Mathematics", "English", "Economics", "Chemistry", "Physics", "History", "Art", "Music", "Nursing", "Political Science", "Sociology"]
+        
+        for i, user in enumerate(users):
+            profile = UserProfile(
+                user_id=user.id,
+                gender=genders[i],
+                year=years[i],
+                major=majors[i],
+                bio=f"SDSU {years[i]} majoring in {majors[i]}"
+            )
+            db.add(profile)
+        
+        db.commit()
+        
+        # Create tags (year levels, majors, companies, skills, interests)
+        tags_data = [
+            "Freshman", "Sophomore", "Junior", "Senior", "Graduate", "PhD", "Alumni",
+            "CS Major", "Business Major", "Engineering Major",
+            "Meta", "Google", "Amazon", "Apple", "Microsoft", "Netflix",
+            "Python", "Java", "JavaScript", "React", "Machine Learning", "Data Science",
+            "Web Dev", "Mobile Dev", "Cloud Computing", "Cybersecurity",
+            "Leadership", "Teamwork", "Public Speaking", "Research",
+            "Hackathons", "Open Source", "Startups", "Internship"
+        ]
+        tags = []
+        for tag_name in tags_data:
+            tag = Tag(name=tag_name)
+            db.add(tag)
+            tags.append(tag)
+        
+        db.commit()
+        
+        for tag in tags:
+            db.refresh(tag)
+        
+        # Assign tags to users (students get year+major+skills, alumni get Alumni+company+skills)
+        user_tags_data = [
+            (users[0].id, tags[1].id), (users[0].id, tags[7].id), (users[0].id, tags[16].id), (users[0].id, tags[20].id), (users[0].id, tags[30].id),
+            (users[1].id, tags[1].id), (users[1].id, tags[8].id), (users[1].id, tags[26].id), (users[1].id, tags[28].id),
+            (users[2].id, tags[2].id), (users[2].id, tags[9].id), (users[2].id, tags[17].id), (users[2].id, tags[24].id),
+            (users[3].id, tags[3].id), (users[3].id, tags[7].id), (users[3].id, tags[18].id), (users[3].id, tags[22].id), (users[3].id, tags[30].id),
+            (users[4].id, tags[1].id), (users[4].id, tags[7].id), (users[4].id, tags[19].id), (users[4].id, tags[31].id),
+            (users[5].id, tags[6].id), (users[5].id, tags[12].id), (users[5].id, tags[16].id), (users[5].id, tags[20].id), (users[5].id, tags[33].id),
+            (users[6].id, tags[6].id), (users[6].id, tags[13].id), (users[6].id, tags[17].id), (users[6].id, tags[25].id),
+            (users[7].id, tags[3].id), (users[7].id, tags[8].id), (users[7].id, tags[26].id), (users[7].id, tags[32].id),
+            (users[8].id, tags[0].id), (users[8].id, tags[9].id), (users[8].id, tags[23].id),
+            (users[9].id, tags[6].id), (users[9].id, tags[14].id), (users[9].id, tags[21].id), (users[9].id, tags[29].id),
+            (users[10].id, tags[6].id), (users[10].id, tags[15].id), (users[10].id, tags[18].id), (users[10].id, tags[22].id),
+            (users[11].id, tags[6].id), (users[11].id, tags[11].id), (users[11].id, tags[16].id), (users[11].id, tags[24].id),
+            (users[12].id, tags[6].id), (users[12].id, tags[10].id), (users[12].id, tags[20].id), (users[12].id, tags[27].id),
+            (users[13].id, tags[3].id), (users[13].id, tags[8].id), (users[13].id, tags[26].id),
+            (users[14].id, tags[4].id), (users[14].id, tags[7].id), (users[14].id, tags[21].id), (users[14].id, tags[29].id),
+            (users[15].id, tags[0].id), (users[15].id, tags[8].id), (users[15].id, tags[27].id)
         ]
         
-        professors = []
-        for name, dept, email in professors_data:
-            prof = Professor(name=name, department=dept, email=email)
-            db.add(prof)
-            professors.append(prof)
-        db.commit()
-        for prof in professors:
-            db.refresh(prof)
+        for user_id, tag_id in user_tags_data:
+            user_tag = UserTag(user_id=user_id, tag_id=tag_id)
+            db.add(user_tag)
         
+        db.commit()
+        
+        # Create user courses (kedar gets more courses)
         courses_data = [
-            ("CS-160", "Introduction to Programming", "Computer Science", "Fundamentals of programming using Python"),
-            ("CS-210", "Data Structures", "Computer Science", "Study of data structures and algorithms"),
-            ("CS-310", "Database Systems", "Computer Science", "Design and implementation of database systems"),
-            ("CS-370", "Web Development", "Computer Science", "Full-stack web development with modern frameworks"),
-            ("CS-480", "Machine Learning", "Computer Science", "Introduction to ML algorithms and applications"),
-            ("MATH-150", "Calculus I", "Mathematics", "Differential calculus and applications"),
-            ("MATH-151", "Calculus II", "Mathematics", "Integral calculus and series"),
-            ("BUS-101", "Introduction to Business", "Business", "Overview of business principles"),
-            ("ENGR-101", "Engineering Design", "Engineering", "Introduction to engineering design process"),
-            ("PSY-101", "General Psychology", "Psychology", "Introduction to psychological concepts"),
+            (users[0].id, "CS 310", "Data Structures", "Fall 2023"),
+            (users[0].id, "CS 576", "Machine Learning", "Spring 2024"),
+            (users[0].id, "CS 535", "Object-Oriented Programming", "Fall 2023"),
+            (users[1].id, "CS 310", "Data Structures", "Fall 2023"),
+            (users[2].id, "CS 576", "Machine Learning", "Spring 2024"),
+            (users[2].id, "CS 535", "Object-Oriented Programming", "Fall 2023"),
+            (users[3].id, "MATH 254", "Calculus III", "Fall 2023"),
+            (users[4].id, "CS 310", "Data Structures", "Spring 2024"),
+            (users[5].id, "CS 576", "Machine Learning", "Spring 2024"),
+            (users[6].id, "CS 535", "Object-Oriented Programming", "Spring 2024"),
         ]
         
-        courses = []
-        for code, title, dept, desc in courses_data:
-            course = Course(code=code, title=title, department=dept, description=desc)
+        for user_id, code, name, semester in courses_data:
+            course = UserCourse(user_id=user_id, course_code=code, course_name=name, semester=semester)
             db.add(course)
-            courses.append(course)
+        
         db.commit()
-        for course in courses:
-            db.refresh(course)
-        
-        syllabi = [
-            "/syllabi/cs160_fall2024.txt",
-            "/syllabi/cs210_spring2024.txt",
-            "/syllabi/cs310_fall2024.txt",
-            "/syllabi/cs370_fall2024.txt",
-            "/syllabi/cs480_spring2024.txt",
-            "/syllabi/math150_spring2024.txt"
-        ]
-        semesters = ["Fall 2024", "Spring 2024", "Fall 2023"]
-        schedules = ["MWF 10:00-11:00", "TTh 14:00-15:30", "MWF 13:00-14:00", "TTh 10:00-11:30"]
-        locations = ["GMCS 333", "GMCS 408", "Storm Hall 123", "Engineering 201", "Arts & Letters 301"]
-        exam_formats = ["Midterm + Final", "Project-Based", "Weekly Quizzes + Final", "3 Exams"]
-        grading_styles = ["Easy Grading", "Fair Grading", "Tough Grading"]
-        
-        sections = []
-        for course in courses[:5]:
-            for i in range(2):
-                prof = random.choice([p for p in professors if p.department == course.department])
-                section = CourseSection(
-                    course_id=course.id, professor_id=prof.id, section_number=f"0{i+1}",
-                    semester=random.choice(semesters), schedule=random.choice(schedules),
-                    location=random.choice(locations), syllabus_url=random.choice(syllabi),
-                    exam_format=random.choice(exam_formats), grading_style=random.choice(grading_styles)
-                )
-                db.add(section)
-                sections.append(section)
-        db.commit()
-        for section in sections:
-            db.refresh(section)
-        
-        review_contents = [
-            "Great professor! Very clear explanations and helpful during office hours.",
-            "Challenging course but fair grading. Learned a lot.",
-            "Lectures can be dry but material is well-organized.",
-            "Tough grader but you'll learn the material thoroughly.",
-            "Very engaging lectures. Highly recommend!",
-            "Assignments are time-consuming but worthwhile.",
-            "Clear expectations and fair exams.",
-            "Professor is passionate about the subject.",
-        ]
-        tags_options = [
-            "online-exam,lots-of-hw,lecture-heavy,participation-matters",
-            "paper-based,less-hw,not-lecture-heavy,participation-optional",
-            "online-exam,lots-of-hw,not-lecture-heavy,participation-matters",
-            "paper-based,lots-of-hw,lecture-heavy,participation-optional",
-            "online-exam,less-hw,lecture-heavy,participation-matters",
-            "paper-based,less-hw,lecture-heavy,participation-optional",
-            "online-exam,lots-of-hw,lecture-heavy,participation-optional",
-            "paper-based,less-hw,not-lecture-heavy,participation-matters"
-        ]
-        
-        for section in sections:
-            for _ in range(random.randint(8, 15)):
-                user = random.choice(users)
-                review = Review(
-                    user_id=user.id, section_id=section.id,
-                    rating=round(random.uniform(3.0, 5.0), 1),
-                    difficulty=round(random.uniform(2.0, 5.0), 1),
-                    workload=round(random.uniform(2.0, 5.0), 1),
-                    would_take_again=random.choice([True, True, False]),
-                    grade_received=random.choice(["A", "A-", "B+", "B", "B-", "C+", "C"]),
-                    attendance_mandatory=random.choice([True, False]),
-                    textbook_required=random.choice([True, False]),
-                    content=random.choice(review_contents),
-                    tags=random.choice(tags_options),
-                    helpful_count=random.randint(0, 25)
-                )
-                db.add(review)
-        db.commit()
-        
-        for prof in professors:
-            reviews = db.query(Review).join(CourseSection).filter(CourseSection.professor_id == prof.id).all()
-            if reviews:
-                prof.total_reviews = len(reviews)
-                prof.avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1)
-                prof.avg_difficulty = round(sum(r.difficulty for r in reviews) / len(reviews), 1)
-                prof.would_take_again_percent = round((sum(1 for r in reviews if r.would_take_again) / len(reviews)) * 100, 1)
-        db.commit()
-        
-        question_titles = [
-            "What's the best way to prepare for the midterm?",
-            "Are the textbook readings necessary?",
-            "How difficult are the programming assignments?",
-            "Does attendance affect the grade?",
-            "What topics are covered in the final?",
-        ]
-        question_contents = [
-            "I'm wondering what the best study strategy is for this class.",
-            "Trying to figure out if I need to buy the textbook or if lecture notes are enough.",
-            "How much time should I allocate for the weekly assignments?",
-            "Does the professor take attendance or is it optional?",
-            "What should I focus on when studying for the final exam?",
-        ]
-        
-        for section in sections:
-            for i in range(random.randint(5, 10)):
-                user = random.choice(users)
-                question = Question(
-                    user_id=user.id, section_id=section.id,
-                    title=question_titles[i % len(question_titles)],
-                    content=question_contents[i % len(question_contents)],
-                    upvotes=random.randint(0, 15),
-                    answer_count=random.randint(0, 3)
-                )
-                db.add(question)
-        db.commit()
-        
         print("✅ Database seeded successfully!")
-        print(f"Created {len(users)} users, {len(posts_data)} posts, {len(messages_data)} messages, {len(connections_data)} connections")
-        print(f"Created {len(professors)} professors, {len(courses)} courses, {len(sections)} sections with reviews and Q&A")
+        print(f"Created {len(users)} users, {len(posts_data)} posts, {len(comments_data)} comments, {len(votes_data)} votes, {len(messages_data)} messages, {len(connections_data)} connections, {len(tags)} tags, and {len(courses_data)} courses")
         
     except Exception as e:
         print(f"❌ Error seeding database: {e}")

@@ -29,12 +29,12 @@ export default function AuthPage() {
     }
 
     try {
-      const endpoint = isLogin ? '/api/login' : '/api/users/';
+      const endpoint = isLogin ? '/login' : '/users/';
       const body = isLogin 
         ? { email: formData.email, password: formData.password }
         : formData;
 
-      const res = await fetch(`http://localhost:3000${endpoint}`, {
+      const res = await fetch(`http://localhost:8000${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

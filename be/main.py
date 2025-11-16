@@ -1,16 +1,18 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import bcrypt
 import os
 from dotenv import load_dotenv
 
 from database import SessionLocal, engine, get_db
-from models import Base, User, Post, PostLike, Comment, Message, Connection, Professor, Course, CourseSection, Review, Question, Answer
-from schemas import UserCreate, UserUpdate, User as UserSchema
+from models import Base, User, Post, PostLike, Comment, Message, Connection, UserProfile, Tag, UserTag, UserCourse
+from schemas import UserCreate, UserUpdate, User as UserSchema, PostCreate
+from schemas import UserCreate, UserUpdate, User as UserSchema, PostCreate
 from auth_schemas import LoginRequest, LoginResponse
-from course_schemas import ReviewCreate, QuestionCreate, AnswerCreate
-from sqlalchemy import or_, func
+from typing import Optional
+from sqlalchemy import func
 
 load_dotenv()
 
@@ -108,38 +110,81 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return {"message": "User deleted successfully"}
 
 @app.get("/posts/")
-def get_posts(db: Session = Depends(get_db)):
-    posts = db.query(Post).order_by(Post.created_at.desc()).all()
+def get_posts(category: Optional[str] = None, user_id: Optional[int] = None, db: Session = Depends(get_db)):
+    query = db.query(Post)
+    if category and category != 'all':
+        query = query.filter(Post.category == category)
+    posts = query.order_by(Post.created_at.desc()).all()
     result = []
     for post in posts:
         user = db.query(User).filter(User.id == post.user_id).first()
+        votes_sum = db.query(func.sum(PostLike.value)).filter(PostLike.post_id == post.id).scalar() or 0
+        comments_count = db.query(Comment).filter(Comment.post_id == post.id).count()
+        user_vote = None
+        if user_id:
+            user_like = db.query(PostLike).filter(PostLike.post_id == post.id, PostLike.user_id == user_id).first()
+            user_vote = user_like.value if user_like else None
         result.append({
             "id": post.id,
             "content": post.content,
-            "likes_count": post.likes_count,
+            "category": post.category,
+            "likes_count": votes_sum,
+            "comments_count": comments_count,
             "created_at": post.created_at,
-            "username": user.username if user else "Unknown"
+            "username": user.username if user else "Unknown",
+            "user_id": post.user_id,
+            "user_vote": user_vote
         })
     return result
 
-@app.post("/posts/{post_id}/like")
-def like_post(post_id: int, user_id: int, db: Session = Depends(get_db)):
-    existing_like = db.query(PostLike).filter(
-        PostLike.post_id == post_id,
-        PostLike.user_id == user_id
-    ).first()
-    
-    if existing_like:
-        db.delete(existing_like)
-        db.query(Post).filter(Post.id == post_id).update({"likes_count": Post.likes_count - 1})
-        db.commit()
-        return {"liked": False}
+@app.post("/posts/")
+def create_post(post: PostCreate, db: Session = Depends(get_db)):
+    db_post = Post(content=post.content, user_id=post.user_id, category=post.category)
+    db.add(db_post)
+    db.commit()
+    db.refresh(db_post)
+    return {"id": db_post.id, "content": db_post.content, "category": db_post.category}
+
+@app.post("/posts/{post_id}/vote")
+def vote_post(post_id: int, user_id: int, value: int, db: Session = Depends(get_db)):
+    existing = db.query(PostLike).filter(PostLike.post_id == post_id, PostLike.user_id == user_id).first()
+    if existing:
+        if existing.value == value:
+            db.delete(existing)
+            db.commit()
+            return {"voted": False}
+        else:
+            existing.value = value
+            db.commit()
+            return {"voted": True, "value": value}
     else:
-        like = PostLike(post_id=post_id, user_id=user_id)
+        like = PostLike(post_id=post_id, user_id=user_id, value=value)
         db.add(like)
-        db.query(Post).filter(Post.id == post_id).update({"likes_count": Post.likes_count + 1})
         db.commit()
-        return {"liked": True}
+        return {"voted": True, "value": value}
+
+@app.get("/posts/{post_id}/comments")
+def get_comments(post_id: int, db: Session = Depends(get_db)):
+    comments = db.query(Comment).filter(Comment.post_id == post_id).order_by(Comment.created_at.asc()).all()
+    result = []
+    for comment in comments:
+        user = db.query(User).filter(User.id == comment.user_id).first()
+        result.append({
+            "id": comment.id,
+            "content": comment.content,
+            "username": user.username if user else "Unknown",
+            "created_at": comment.created_at
+        })
+    return result
+
+@app.post("/posts/{post_id}/comments")
+def add_comment(post_id: int, user_id: int, content: str, db: Session = Depends(get_db)):
+    comment = Comment(post_id=post_id, user_id=user_id, content=content)
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    user = db.query(User).filter(User.id == user_id).first()
+    return {"id": comment.id, "content": comment.content, "username": user.username if user else "Unknown", "created_at": comment.created_at}
 
 @app.get("/messages/{user_id}")
 def get_messages(user_id: int, db: Session = Depends(get_db)):
@@ -167,13 +212,111 @@ def get_messages(user_id: int, db: Session = Depends(get_db)):
     
     return list(user_messages.values())
 
-@app.get("/users/search/{query}")
-def search_users(query: str, current_user_id: int, db: Session = Depends(get_db)):
+@app.get("/users/recommended/{user_id}")
+def get_recommended_users(user_id: int, db: Session = Depends(get_db)):
+    # Get current user's tags
+    user_tags = db.query(Tag.id).join(UserTag).filter(UserTag.user_id == user_id).all()
+    user_tag_ids = [t[0] for t in user_tags]
+    
+    # Get all users except current user and already connected
+    connected_ids = db.query(Connection.friend_id).filter(
+        Connection.user_id == user_id
+    ).union(
+        db.query(Connection.user_id).filter(Connection.friend_id == user_id)
+    ).all()
+    connected_ids = [c[0] for c in connected_ids]
+    
     users = db.query(User).filter(
-        (User.username.like(f"%{query}%") | User.email.like(f"%{query}%")),
-        User.id != current_user_id
-    ).limit(10).all()
-    return [{"id": u.id, "username": u.username, "email": u.email} for u in users]
+        User.id != user_id,
+        ~User.id.in_(connected_ids) if connected_ids else True
+    ).all()
+    
+    result = []
+    for u in users:
+        profile = db.query(UserProfile).filter(UserProfile.user_id == u.id).first()
+        tags = db.query(Tag).join(UserTag).filter(UserTag.user_id == u.id).all()
+        courses = db.query(UserCourse).filter(UserCourse.user_id == u.id).all()
+        
+        # Count matching tags
+        matching_tags = sum(1 for t in tags if t.id in user_tag_ids)
+        
+        result.append({
+            "id": u.id,
+            "username": u.username,
+            "email": u.email,
+            "gender": profile.gender if profile else None,
+            "year": profile.year if profile else None,
+            "major": profile.major if profile else None,
+            "bio": profile.bio if profile else None,
+            "tags": [t.name for t in tags],
+            "courses": [c.course_code for c in courses],
+            "matching_tags": matching_tags
+        })
+    
+    # Sort by matching tags (descending)
+    result.sort(key=lambda x: x['matching_tags'], reverse=True)
+    return result[:20]
+
+@app.get("/users/search")
+def search_users(
+    current_user_id: int,
+    query: Optional[str] = None,
+    gender: Optional[str] = None,
+    year: Optional[str] = None,
+    course: Optional[str] = None,
+    tag: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    # Start with base query
+    users_query = db.query(User).filter(User.id != current_user_id)
+    
+    # Apply text search
+    if query:
+        users_query = users_query.filter(
+            (User.username.like(f"%{query}%")) | (User.email.like(f"%{query}%"))
+        )
+    
+    # Join with profile for filters
+    if gender or year:
+        users_query = users_query.join(UserProfile, User.id == UserProfile.user_id)
+        if gender:
+            users_query = users_query.filter(UserProfile.gender == gender)
+        if year:
+            users_query = users_query.filter(UserProfile.year == year)
+    
+    # Filter by course
+    if course:
+        users_query = users_query.join(UserCourse, User.id == UserCourse.user_id).filter(
+            UserCourse.course_code.like(f"%{course}%")
+        )
+    
+    # Filter by tag
+    if tag:
+        users_query = users_query.join(UserTag, User.id == UserTag.user_id).join(
+            Tag, UserTag.tag_id == Tag.id
+        ).filter(Tag.name == tag)
+    
+    users = users_query.limit(20).all()
+    
+    result = []
+    for u in users:
+        profile = db.query(UserProfile).filter(UserProfile.user_id == u.id).first()
+        tags = db.query(Tag).join(UserTag).filter(UserTag.user_id == u.id).all()
+        courses = db.query(UserCourse).filter(UserCourse.user_id == u.id).all()
+        
+        result.append({
+            "id": u.id,
+            "username": u.username,
+            "email": u.email,
+            "gender": profile.gender if profile else None,
+            "year": profile.year if profile else None,
+            "major": profile.major if profile else None,
+            "bio": profile.bio if profile else None,
+            "tags": [t.name for t in tags],
+            "courses": [c.course_code for c in courses]
+        })
+    
+    return result
 
 @app.post("/connections/")
 def send_friend_request(user_id: int, friend_id: int, db: Session = Depends(get_db)):
@@ -200,13 +343,19 @@ def get_connections(user_id: int, db: Session = Depends(get_db)):
     for conn in connections:
         other_user_id = conn.friend_id if conn.user_id == user_id else conn.user_id
         other_user = db.query(User).filter(User.id == other_user_id).first()
-        result.append({
-            "id": conn.id,
-            "user_id": other_user_id,
-            "username": other_user.username if other_user else "Unknown",
-            "status": conn.status,
-            "is_sender": conn.user_id == user_id
-        })
+        if other_user:
+            profile = db.query(UserProfile).filter(UserProfile.user_id == other_user.id).first()
+            tags = db.query(Tag).join(UserTag).filter(UserTag.user_id == other_user.id).all()
+            result.append({
+                "id": conn.id,
+                "user_id": other_user_id,
+                "username": other_user.username,
+                "email": other_user.email,
+                "bio": profile.bio if profile else None,
+                "tags": [t.name for t in tags],
+                "status": conn.status,
+                "is_sender": conn.user_id == user_id
+            })
     return result
 
 @app.put("/connections/{connection_id}")
@@ -219,235 +368,31 @@ def update_connection(connection_id: int, status: str, db: Session = Depends(get
     db.commit()
     return {"message": "Connection updated"}
 
-# CourseCompass API Endpoints
+@app.get("/tags/")
+def get_all_tags(db: Session = Depends(get_db)):
+    tags = db.query(Tag).all()
+    return [{"id": t.id, "name": t.name} for t in tags]
 
-@app.get("/courses/search")
-def search_courses(
-    query: str = "",
-    department: str = None,
-    db: Session = Depends(get_db)
-):
-    filters = []
-    if query:
-        filters.append(or_(
-            Course.code.like(f"%{query}%"),
-            Course.title.like(f"%{query}%")
-        ))
-    if department:
-        filters.append(Course.department == department)
-    
-    courses = db.query(Course).filter(*filters).limit(50).all() if filters else db.query(Course).limit(50).all()
-    return courses
+@app.get("/users/{user_id}/tags")
+def get_user_tags(user_id: int, db: Session = Depends(get_db)):
+    tags = db.query(Tag).join(UserTag).filter(UserTag.user_id == user_id).all()
+    return [{"id": t.id, "name": t.name} for t in tags]
 
-@app.get("/professors/search")
-def search_professors(
-    query: str = "",
-    department: str = None,
-    db: Session = Depends(get_db)
-):
-    filters = []
-    if query:
-        filters.append(Professor.name.like(f"%{query}%"))
-    if department:
-        filters.append(Professor.department == department)
-    
-    professors = db.query(Professor).filter(*filters).limit(50).all() if filters else db.query(Professor).limit(50).all()
-    return professors
-
-@app.get("/professors/popular")
-def get_popular_professors(db: Session = Depends(get_db)):
-    return db.query(Professor).order_by(Professor.total_reviews.desc()).limit(10).all()
-
-@app.get("/professors/{professor_id}")
-def get_professor(professor_id: int, db: Session = Depends(get_db)):
-    professor = db.query(Professor).filter(Professor.id == professor_id).first()
-    if not professor:
-        raise HTTPException(status_code=404, detail="Professor not found")
-    
-    sections = db.query(CourseSection, Course).join(Course).filter(
-        CourseSection.professor_id == professor_id
-    ).all()
-    
-    courses_taught = [{
-        "section_id": s.CourseSection.id,
-        "course_code": s.Course.code,
-        "course_title": s.Course.title,
-        "section_number": s.CourseSection.section_number,
-        "semester": s.CourseSection.semester,
-        "schedule": s.CourseSection.schedule,
-        "location": s.CourseSection.location,
-        "syllabus_url": s.CourseSection.syllabus_url,
-        "exam_format": s.CourseSection.exam_format,
-        "grading_style": s.CourseSection.grading_style
-    } for s in sections]
-    
-    return {
-        "professor": professor,
-        "courses_taught": courses_taught
-    }
-
-@app.get("/courses/{course_id}")
-def get_course(course_id: int, db: Session = Depends(get_db)):
-    course = db.query(Course).filter(Course.id == course_id).first()
-    if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
-    
-    sections = db.query(CourseSection, Professor).join(Professor).filter(
-        CourseSection.course_id == course_id
-    ).all()
-    
-    sections_data = [{
-        "section_id": s.CourseSection.id,
-        "professor_id": s.Professor.id,
-        "professor_name": s.Professor.name,
-        "professor_rating": s.Professor.avg_rating,
-        "section_number": s.CourseSection.section_number,
-        "semester": s.CourseSection.semester,
-        "schedule": s.CourseSection.schedule,
-        "location": s.CourseSection.location,
-        "syllabus_url": s.CourseSection.syllabus_url,
-        "exam_format": s.CourseSection.exam_format,
-        "grading_style": s.CourseSection.grading_style
-    } for s in sections]
-    
-    return {
-        "course": course,
-        "sections": sections_data
-    }
-
-@app.get("/sections/{section_id}/reviews")
-def get_section_reviews(
-    section_id: int,
-    sort_by: str = "recent",
-    db: Session = Depends(get_db)
-):
-    query = db.query(Review, User).join(User).filter(Review.section_id == section_id)
-    
-    if sort_by == "helpful":
-        query = query.order_by(Review.helpful_count.desc())
-    else:
-        query = query.order_by(Review.created_at.desc())
-    
-    reviews = query.all()
-    
-    return [{
-        "id": r.Review.id,
-        "username": r.User.username,
-        "rating": r.Review.rating,
-        "difficulty": r.Review.difficulty,
-        "workload": r.Review.workload,
-        "would_take_again": r.Review.would_take_again,
-        "grade_received": r.Review.grade_received,
-        "attendance_mandatory": r.Review.attendance_mandatory,
-        "textbook_required": r.Review.textbook_required,
-        "content": r.Review.content,
-        "tags": r.Review.tags,
-        "helpful_count": r.Review.helpful_count,
-        "created_at": r.Review.created_at
-    } for r in reviews]
-
-@app.post("/sections/{section_id}/reviews")
-def create_review(
-    section_id: int,
-    user_id: int,
-    review: ReviewCreate,
-    db: Session = Depends(get_db)
-):
-    db_review = Review(**review.dict(), user_id=user_id)
-    db.add(db_review)
+@app.post("/users/{user_id}/tags/{tag_id}")
+def add_user_tag(user_id: int, tag_id: int, db: Session = Depends(get_db)):
+    existing = db.query(UserTag).filter(UserTag.user_id == user_id, UserTag.tag_id == tag_id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Tag already added")
+    user_tag = UserTag(user_id=user_id, tag_id=tag_id)
+    db.add(user_tag)
     db.commit()
-    
-    # Update professor stats
-    section = db.query(CourseSection).filter(CourseSection.id == section_id).first()
-    if section:
-        professor = db.query(Professor).filter(Professor.id == section.professor_id).first()
-        if professor:
-            reviews = db.query(Review).join(CourseSection).filter(
-                CourseSection.professor_id == professor.id
-            ).all()
-            
-            professor.total_reviews = len(reviews)
-            professor.avg_rating = sum(r.rating for r in reviews) / len(reviews)
-            professor.avg_difficulty = sum(r.difficulty for r in reviews) / len(reviews)
-            professor.would_take_again_percent = (sum(1 for r in reviews if r.would_take_again) / len(reviews)) * 100
-            db.commit()
-    
-    db.refresh(db_review)
-    return db_review
+    return {"message": "Tag added"}
 
-@app.get("/sections/{section_id}/questions")
-def get_section_questions(
-    section_id: int,
-    sort_by: str = "recent",
-    db: Session = Depends(get_db)
-):
-    query = db.query(Question, User).join(User).filter(Question.section_id == section_id)
-    
-    if sort_by == "popular":
-        query = query.order_by(Question.upvotes.desc())
-    else:
-        query = query.order_by(Question.created_at.desc())
-    
-    questions = query.all()
-    
-    return [{
-        "id": q.Question.id,
-        "username": q.User.username,
-        "title": q.Question.title,
-        "content": q.Question.content,
-        "upvotes": q.Question.upvotes,
-        "answer_count": q.Question.answer_count,
-        "created_at": q.Question.created_at
-    } for q in questions]
-
-@app.post("/sections/{section_id}/questions")
-def create_question(
-    section_id: int,
-    user_id: int,
-    question: QuestionCreate,
-    db: Session = Depends(get_db)
-):
-    db_question = Question(**question.dict(), user_id=user_id)
-    db.add(db_question)
+@app.delete("/users/{user_id}/tags/{tag_id}")
+def remove_user_tag(user_id: int, tag_id: int, db: Session = Depends(get_db)):
+    user_tag = db.query(UserTag).filter(UserTag.user_id == user_id, UserTag.tag_id == tag_id).first()
+    if not user_tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    db.delete(user_tag)
     db.commit()
-    db.refresh(db_question)
-    return db_question
-
-@app.get("/questions/{question_id}/answers")
-def get_answers(question_id: int, db: Session = Depends(get_db)):
-    answers = db.query(Answer, User).join(User).filter(
-        Answer.question_id == question_id
-    ).order_by(Answer.is_accepted.desc(), Answer.upvotes.desc()).all()
-    
-    return [{
-        "id": a.Answer.id,
-        "username": a.User.username,
-        "content": a.Answer.content,
-        "upvotes": a.Answer.upvotes,
-        "is_accepted": a.Answer.is_accepted,
-        "created_at": a.Answer.created_at
-    } for a in answers]
-
-@app.post("/questions/{question_id}/answers")
-def create_answer(
-    question_id: int,
-    user_id: int,
-    answer: AnswerCreate,
-    db: Session = Depends(get_db)
-):
-    db_answer = Answer(**answer.dict(), user_id=user_id)
-    db.add(db_answer)
-    
-    # Update question answer count
-    question = db.query(Question).filter(Question.id == question_id).first()
-    if question:
-        question.answer_count += 1
-    
-    db.commit()
-    db.refresh(db_answer)
-    return db_answer
-
-@app.get("/departments")
-def get_departments(db: Session = Depends(get_db)):
-    departments = db.query(Course.department).distinct().all()
-    return [d[0] for d in departments]
+    return {"message": "Tag removed"}

@@ -25,6 +25,18 @@ install-all: setup-venv install-be install-fe
 dev:
 	make run-be & make run-fe
 
+# Setup MySQL database
+setup-db:
+	/opt/homebrew/bin/mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS nexus; CREATE USER IF NOT EXISTS 'nexus'@'localhost' IDENTIFIED BY 'NexusPass123!'; GRANT ALL PRIVILEGES ON nexus.* TO 'nexus'@'localhost'; FLUSH PRIVILEGES;"
+
+# Migrate database to add category column
+migrate-db:
+	cd be && source .venv/bin/activate && python migrate_db.py
+
+# Update existing posts with categories
+update-posts:
+	cd be && source .venv/bin/activate && python update_posts.py
+
 # Seed database with sample data
 seed:
 	cd be && source .venv/bin/activate && python seed.py

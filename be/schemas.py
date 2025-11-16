@@ -21,3 +21,8 @@ class User(UserBase):
 
     class Config:
         from_attributes = True
+
+class PostCreate(BaseModel):
+    content: str
+    user_id: int
+    category: str = "general"
