@@ -9,6 +9,8 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def seed_database():
+    # Drop all tables first to ensure clean schema
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     
@@ -64,13 +66,18 @@ def seed_database():
         
         users = []
         for email, username, password in users_data:
-            user = User(
-                email=email,
-                username=username,
-                password_hash=hash_password(password)
-            )
-            db.add(user)
-            users.append(user)
+            # Check if user already exists
+            existing_user = db.query(User).filter(User.email == email).first()
+            if not existing_user:
+                user = User(
+                    email=email,
+                    username=username,
+                    password_hash=hash_password(password)
+                )
+                db.add(user)
+                users.append(user)
+            else:
+                users.append(existing_user)
         
         db.commit()
         
@@ -78,28 +85,32 @@ def seed_database():
         for user in users:
             db.refresh(user)
         
-        # Create posts
+        # Create posts with categories
         posts_data = [
-            (users[0].id, "Just finished my midterms! Time to relax 🎉", 15),
-            (users[1].id, "Looking for study partners for CS 310. Anyone interested?", 8),
-            (users[2].id, "The new library hours are amazing! Open till midnight now 📚", 23),
-            (users[3].id, "Does anyone know when registration opens for Spring semester?", 5),
-            (users[4].id, "Great game last night! Go Aztecs! 🏈", 42),
-            (users[5].id, "Coffee study session at Starbucks tomorrow at 3pm. Join us!", 12),
-            (users[6].id, "Need help with calculus homework. Anyone free?", 7),
-            (users[7].id, "The campus food trucks are back! 🌮", 18),
-            (users[8].id, "Looking for a roommate for next semester. DM me!", 9),
-            (users[9].id, "Just got accepted into the honors program! 🎓", 31),
-            (users[10].id, "Anyone going to the career fair next week?", 14),
-            (users[11].id, "Best study spots on campus? Need recommendations", 11),
-            (users[12].id, "Selling textbooks for ECON 101. Like new condition!", 6),
-            (users[13].id, "Who else is excited for spring break? ☀️", 28),
-            (users[14].id, "Free tutoring sessions at the library every Tuesday!", 19),
-            (users[15].id, "Lost my student ID near the gym. Please help!", 4)
+            (users[0].id, "Just finished my midterms! Time to relax 🎉", "general", 15),
+            (users[1].id, "Looking for study partners for CS 310. Anyone interested?", "academic", 8),
+            (users[2].id, "The new library hours are amazing! Open till midnight now 📚", "academic", 23),
+            (users[3].id, "Does anyone know when registration opens for Spring semester?", "academic", 5),
+            (users[4].id, "Great game last night! Go Aztecs! 🏈", "events", 42),
+            (users[5].id, "Coffee study session at Starbucks tomorrow at 3pm. Join us!", "social", 12),
+            (users[6].id, "Need help with calculus homework. Anyone free?", "academic", 7),
+            (users[7].id, "The campus food trucks are back! 🌮", "general", 18),
+            (users[8].id, "Looking for a roommate for next semester. DM me!", "housing", 9),
+            (users[9].id, "Just got accepted into the honors program! 🎓", "academic", 31),
+            (users[10].id, "Anyone going to the career fair next week?", "jobs", 14),
+            (users[11].id, "Best study spots on campus? Need recommendations", "academic", 11),
+            (users[12].id, "Selling textbooks for ECON 101. Like new condition!", "academic", 6),
+            (users[13].id, "Who else is excited for spring break? ☀️", "social", 28),
+            (users[14].id, "Free tutoring sessions at the library every Tuesday!", "academic", 19),
+            (users[15].id, "Lost my student ID near the gym. Please help!", "general", 4),
+            (users[0].id, "Internship opportunity at local tech company. Apply now!", "jobs", 22),
+            (users[2].id, "Study abroad info session tomorrow at 2pm in Student Union", "events", 16),
+            (users[4].id, "Anyone need a ride to the airport for spring break?", "social", 13),
+            (users[6].id, "Apartment available near campus. Great location!", "housing", 8)
         ]
         
-        for user_id, content, likes in posts_data:
-            post = Post(user_id=user_id, content=content, likes_count=likes)
+        for user_id, content, category, likes in posts_data:
+            post = Post(user_id=user_id, content=content, category=category, likes_count=likes)
             db.add(post)
         
         db.commit()
