@@ -985,25 +985,29 @@ export default function Home() {
                       <button onClick={() => setReviewTab('qa')} className={`pb-3 px-2 font-medium ${reviewTab === 'qa' ? 'border-b-2 text-white' : 'text-gray-500'}`} style={reviewTab === 'qa' ? {borderColor: '#A6192E'} : {}}>Q&A ({sectionQuestions.length})</button>
                     </div>
                     <div className="p-5 space-y-4">
-                      {reviewTab === 'reviews' ? sectionReviews.map((r: any) => (
-                        <div key={r.id} className="border-b border-gray-800 pb-4">
-                          <div className="flex justify-between mb-2">
-                            <span className="font-medium text-white">{r.username}</span>
-                            <span className="text-lg font-bold" style={{color: '#A6192E'}}>{r.rating.toFixed(1)}/5.0</span>
+                      {reviewTab === 'reviews' ? (
+                        sectionReviews.length > 0 ? sectionReviews.map((r: any) => (
+                          <div key={r.id} className="border-b border-gray-800 pb-4">
+                            <div className="flex justify-between mb-2">
+                              <span className="font-medium text-white">{r.username}</span>
+                              <span className="text-lg font-bold" style={{color: '#A6192E'}}>{r.rating.toFixed(1)}/5.0</span>
+                            </div>
+                            <p className="text-gray-300">{r.content}</p>
+                            {r.tags && <div className="flex gap-2 mt-2">{r.tags.split(',').map((tag: string, i: number) => {
+                              const colors = ['bg-blue-900 text-blue-300', 'bg-green-900 text-green-300', 'bg-purple-900 text-purple-300', 'bg-orange-900 text-orange-300', 'bg-pink-900 text-pink-300', 'bg-teal-900 text-teal-300'];
+                              return <span key={i} className={`text-xs px-2 py-1 rounded ${colors[i % colors.length]}`}>{tag}</span>;
+                            })}</div>}
                           </div>
-                          <p className="text-gray-300">{r.content}</p>
-                          {r.tags && <div className="flex gap-2 mt-2">{r.tags.split(',').map((tag: string, i: number) => {
-                            const colors = ['bg-blue-900 text-blue-300', 'bg-green-900 text-green-300', 'bg-purple-900 text-purple-300', 'bg-orange-900 text-orange-300', 'bg-pink-900 text-pink-300', 'bg-teal-900 text-teal-300'];
-                            return <span key={i} className={`text-xs px-2 py-1 rounded ${colors[i % colors.length]}`}>{tag}</span>;
-                          })}</div>}
-                        </div>
-                      )) : sectionQuestions.map((q: any) => (
-                        <div key={q.id} className="border border-gray-800 rounded-lg p-4">
-                          <h4 className="font-semibold text-white">{q.title}</h4>
-                          <p className="text-sm text-gray-400 mt-2">{q.content}</p>
-                          <div className="text-xs text-gray-500 mt-2">↑ {q.upvotes} • {q.answer_count} answers</div>
-                        </div>
-                      ))}
+                        )) : <div className="text-center text-gray-400 py-8">No reviews yet for this section</div>
+                      ) : (
+                        sectionQuestions.length > 0 ? sectionQuestions.map((q: any) => (
+                          <div key={q.id} className="border border-gray-800 rounded-lg p-4">
+                            <h4 className="font-semibold text-white">{q.title}</h4>
+                            <p className="text-sm text-gray-400 mt-2">{q.content}</p>
+                            <div className="text-xs text-gray-500 mt-2">↑ {q.upvotes} • {q.answer_count} answers</div>
+                          </div>
+                        )) : <div className="text-center text-gray-400 py-8">No questions yet for this section</div>
+                      )}
                     </div>
                   </div>
                 )}
