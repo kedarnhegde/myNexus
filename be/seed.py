@@ -1,7 +1,8 @@
 import bcrypt
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
-from models import Base, User, Post, Message, Connection
+from models import Base, User, Post, Message, Connection, Professor, Course, CourseSection, Review, Question
+import random
 
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -119,8 +120,162 @@ def seed_database():
             db.add(connection)
         
         db.commit()
+        
+        # Seed CourseCompass data
+        professors_data = [
+            ("Dr. Sarah Johnson", "Computer Science", "sjohnson@sdsu.edu"),
+            ("Dr. Michael Chen", "Computer Science", "mchen@sdsu.edu"),
+            ("Dr. Emily Rodriguez", "Computer Science", "erodriguez@sdsu.edu"),
+            ("Dr. James Wilson", "Mathematics", "jwilson@sdsu.edu"),
+            ("Dr. Lisa Anderson", "Mathematics", "landerson@sdsu.edu"),
+            ("Dr. Robert Taylor", "Business", "rtaylor@sdsu.edu"),
+            ("Dr. Maria Garcia", "Engineering", "mgarcia@sdsu.edu"),
+            ("Dr. David Kim", "Psychology", "dkim@sdsu.edu"),
+            ("Dr. Jennifer Lee", "Biology", "jlee@sdsu.edu"),
+            ("Dr. Thomas Brown", "Computer Science", "tbrown@sdsu.edu"),
+        ]
+        
+        professors = []
+        for name, dept, email in professors_data:
+            prof = Professor(name=name, department=dept, email=email)
+            db.add(prof)
+            professors.append(prof)
+        db.commit()
+        for prof in professors:
+            db.refresh(prof)
+        
+        courses_data = [
+            ("CS-160", "Introduction to Programming", "Computer Science", "Fundamentals of programming using Python"),
+            ("CS-210", "Data Structures", "Computer Science", "Study of data structures and algorithms"),
+            ("CS-310", "Database Systems", "Computer Science", "Design and implementation of database systems"),
+            ("CS-370", "Web Development", "Computer Science", "Full-stack web development with modern frameworks"),
+            ("CS-480", "Machine Learning", "Computer Science", "Introduction to ML algorithms and applications"),
+            ("MATH-150", "Calculus I", "Mathematics", "Differential calculus and applications"),
+            ("MATH-151", "Calculus II", "Mathematics", "Integral calculus and series"),
+            ("BUS-101", "Introduction to Business", "Business", "Overview of business principles"),
+            ("ENGR-101", "Engineering Design", "Engineering", "Introduction to engineering design process"),
+            ("PSY-101", "General Psychology", "Psychology", "Introduction to psychological concepts"),
+        ]
+        
+        courses = []
+        for code, title, dept, desc in courses_data:
+            course = Course(code=code, title=title, department=dept, description=desc)
+            db.add(course)
+            courses.append(course)
+        db.commit()
+        for course in courses:
+            db.refresh(course)
+        
+        syllabi = [
+            "/syllabi/cs160_fall2024.txt",
+            "/syllabi/cs210_spring2024.txt",
+            "/syllabi/cs310_fall2024.txt",
+            "/syllabi/cs370_fall2024.txt",
+            "/syllabi/cs480_spring2024.txt",
+            "/syllabi/math150_spring2024.txt"
+        ]
+        semesters = ["Fall 2024", "Spring 2024", "Fall 2023"]
+        schedules = ["MWF 10:00-11:00", "TTh 14:00-15:30", "MWF 13:00-14:00", "TTh 10:00-11:30"]
+        locations = ["GMCS 333", "GMCS 408", "Storm Hall 123", "Engineering 201", "Arts & Letters 301"]
+        exam_formats = ["Midterm + Final", "Project-Based", "Weekly Quizzes + Final", "3 Exams"]
+        grading_styles = ["Easy Grading", "Fair Grading", "Tough Grading"]
+        
+        sections = []
+        for course in courses[:5]:
+            for i in range(2):
+                prof = random.choice([p for p in professors if p.department == course.department])
+                section = CourseSection(
+                    course_id=course.id, professor_id=prof.id, section_number=f"0{i+1}",
+                    semester=random.choice(semesters), schedule=random.choice(schedules),
+                    location=random.choice(locations), syllabus_url=random.choice(syllabi),
+                    exam_format=random.choice(exam_formats), grading_style=random.choice(grading_styles)
+                )
+                db.add(section)
+                sections.append(section)
+        db.commit()
+        for section in sections:
+            db.refresh(section)
+        
+        review_contents = [
+            "Great professor! Very clear explanations and helpful during office hours.",
+            "Challenging course but fair grading. Learned a lot.",
+            "Lectures can be dry but material is well-organized.",
+            "Tough grader but you'll learn the material thoroughly.",
+            "Very engaging lectures. Highly recommend!",
+            "Assignments are time-consuming but worthwhile.",
+            "Clear expectations and fair exams.",
+            "Professor is passionate about the subject.",
+        ]
+        tags_options = [
+            "online-exam,lots-of-hw,lecture-heavy,participation-matters",
+            "paper-based,less-hw,not-lecture-heavy,participation-optional",
+            "online-exam,lots-of-hw,not-lecture-heavy,participation-matters",
+            "paper-based,lots-of-hw,lecture-heavy,participation-optional",
+            "online-exam,less-hw,lecture-heavy,participation-matters",
+            "paper-based,less-hw,lecture-heavy,participation-optional",
+            "online-exam,lots-of-hw,lecture-heavy,participation-optional",
+            "paper-based,less-hw,not-lecture-heavy,participation-matters"
+        ]
+        
+        for section in sections:
+            for _ in range(random.randint(8, 15)):
+                user = random.choice(users)
+                review = Review(
+                    user_id=user.id, section_id=section.id,
+                    rating=round(random.uniform(3.0, 5.0), 1),
+                    difficulty=round(random.uniform(2.0, 5.0), 1),
+                    workload=round(random.uniform(2.0, 5.0), 1),
+                    would_take_again=random.choice([True, True, False]),
+                    grade_received=random.choice(["A", "A-", "B+", "B", "B-", "C+", "C"]),
+                    attendance_mandatory=random.choice([True, False]),
+                    textbook_required=random.choice([True, False]),
+                    content=random.choice(review_contents),
+                    tags=random.choice(tags_options),
+                    helpful_count=random.randint(0, 25)
+                )
+                db.add(review)
+        db.commit()
+        
+        for prof in professors:
+            reviews = db.query(Review).join(CourseSection).filter(CourseSection.professor_id == prof.id).all()
+            if reviews:
+                prof.total_reviews = len(reviews)
+                prof.avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1)
+                prof.avg_difficulty = round(sum(r.difficulty for r in reviews) / len(reviews), 1)
+                prof.would_take_again_percent = round((sum(1 for r in reviews if r.would_take_again) / len(reviews)) * 100, 1)
+        db.commit()
+        
+        question_titles = [
+            "What's the best way to prepare for the midterm?",
+            "Are the textbook readings necessary?",
+            "How difficult are the programming assignments?",
+            "Does attendance affect the grade?",
+            "What topics are covered in the final?",
+        ]
+        question_contents = [
+            "I'm wondering what the best study strategy is for this class.",
+            "Trying to figure out if I need to buy the textbook or if lecture notes are enough.",
+            "How much time should I allocate for the weekly assignments?",
+            "Does the professor take attendance or is it optional?",
+            "What should I focus on when studying for the final exam?",
+        ]
+        
+        for section in sections:
+            for i in range(random.randint(5, 10)):
+                user = random.choice(users)
+                question = Question(
+                    user_id=user.id, section_id=section.id,
+                    title=question_titles[i % len(question_titles)],
+                    content=question_contents[i % len(question_contents)],
+                    upvotes=random.randint(0, 15),
+                    answer_count=random.randint(0, 3)
+                )
+                db.add(question)
+        db.commit()
+        
         print("✅ Database seeded successfully!")
-        print(f"Created {len(users)} users, {len(posts_data)} posts, {len(messages_data)} messages, and {len(connections_data)} connections")
+        print(f"Created {len(users)} users, {len(posts_data)} posts, {len(messages_data)} messages, {len(connections_data)} connections")
+        print(f"Created {len(professors)} professors, {len(courses)} courses, {len(sections)} sections with reviews and Q&A")
         
     except Exception as e:
         print(f"❌ Error seeding database: {e}")

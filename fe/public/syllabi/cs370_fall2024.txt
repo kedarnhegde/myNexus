@@ -1,0 +1,42 @@
+CS-370: Web Development - Fall 2024
+SDSU Computer Science Department
+
+Instructor: Dr. Emily Rodriguez
+Email: erodriguez@sdsu.edu
+Office Hours: MWF 11:00 AM-12:00 PM
+
+Course Description:
+Full-stack web development covering HTML, CSS, JavaScript, React, Node.js, and databases.
+
+Learning Objectives:
+- Build responsive web applications
+- Implement RESTful APIs
+- Work with modern frameworks
+- Deploy web applications
+
+Grading:
+- Projects (50%)
+- Midterm (20%)
+- Final Project (25%)
+- Participation (5%)
+
+Required Materials:
+- Eloquent JavaScript (online)
+- React documentation
+- Node.js installed
+
+Schedule:
+Week 1-2: HTML/CSS Fundamentals
+Week 3-4: JavaScript Basics
+Week 5-6: React Components
+Week 7: Midterm
+Week 8-9: Node.js & Express
+Week 10-11: Database Integration
+Week 12-13: Authentication & Security
+Week 14-15: Final Project Work
+Week 16: Final Presentations
+
+Policies:
+- Attendance optional but recommended
+- Late projects: 10% penalty per day
+- Group projects allowed (2-3 students)

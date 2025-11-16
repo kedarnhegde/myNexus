@@ -1,0 +1,42 @@
+CS-210: Data Structures - Spring 2024
+SDSU Computer Science Department
+
+Instructor: Dr. Michael Chen
+Email: mchen@sdsu.edu
+Office Hours: TTh 1:00-3:00 PM
+
+Course Description:
+Advanced study of data structures including arrays, linked lists, stacks, queues, trees, graphs, and hash tables. Analysis of algorithms and their complexity.
+
+Learning Objectives:
+- Implement and analyze fundamental data structures
+- Understand algorithm complexity (Big O notation)
+- Apply appropriate data structures to solve problems
+- Design efficient algorithms
+
+Grading:
+- Programming Projects (50%)
+- Midterm Exam (20%)
+- Final Exam (25%)
+- Quizzes (5%)
+
+Required Materials:
+- Data Structures and Algorithms in Python by Goodrich et al.
+- IDE of your choice (PyCharm recommended)
+
+Schedule:
+Week 1-2: Arrays and Complexity Analysis
+Week 3-4: Linked Lists
+Week 5-6: Stacks and Queues
+Week 7: Midterm Exam
+Week 8-9: Trees (Binary, BST, AVL)
+Week 10-11: Heaps and Priority Queues
+Week 12-13: Hash Tables
+Week 14: Graphs
+Week 15: Review
+Week 16: Final Exam
+
+Policies:
+- Projects must be completed individually
+- No late submissions accepted
+- Office hours attendance encouraged
