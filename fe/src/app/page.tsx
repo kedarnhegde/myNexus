@@ -39,6 +39,7 @@ export default function Home() {
   const [userTags, setUserTags] = useState<any[]>([]);
   const [allTags, setAllTags] = useState<any[]>([]);
   const [showTagSelector, setShowTagSelector] = useState(false);
+  const [calendarDate, setCalendarDate] = useState(new Date());
   
   const getButtonText = (eventName: string, defaultAction: string) => {
     return registeredEvents[eventName] ? `${registeredEvents[eventName]}ed` : defaultAction;
@@ -445,7 +446,7 @@ export default function Home() {
             <span className="font-medium text-white">Clubs</span>
           </button>
           
-          <button onClick={() => setActiveSection('courses')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'courses' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+          <button onClick={() => router.push('/courses')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'courses' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
             <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
               <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
             </svg>
@@ -1138,17 +1139,79 @@ export default function Home() {
                   <h3 className="text-lg font-semibold text-white mb-3">About</h3>
                   <p className="text-gray-300 mb-4">{selectedUser.bio || 'No bio available'}</p>
                   
-                  <h3 className="text-lg font-semibold text-white mb-3">Availability</h3>
-                  <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                    <div className="grid grid-cols-7 gap-2 text-center">
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                        <div key={day} className="text-xs text-gray-400">{day}</div>
-                      ))}
-                      {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28].map(d => (
-                        <div key={d} className={`text-xs py-2 rounded ${[5,12,19,26].includes(d) ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}>{d}</div>
-                      ))}
+                  {selectedUser.courses && selectedUser.courses.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-gray-400 mb-2">📚 Courses</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedUser.courses.map((course: string, i: number) => (
+                          <span key={i} className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded">
+                            {course}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-3">Green = Available for sessions</p>
+                  )}
+                  
+                  {selectedUser.clubs && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-gray-400 mb-2">🎯 Clubs</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedUser.clubs.split(',').map((club: string, i: number) => (
+                          <span key={i} className="text-xs bg-purple-900 text-purple-300 px-2 py-1 rounded">
+                            {club}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <h3 className="text-lg font-semibold text-white mb-3">Availability</h3>
+                  <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-4 mb-4 border border-gray-700">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h4 className="text-white font-medium">{calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h4>
+                      <div className="flex gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1)); }} className="text-gray-400 hover:text-white transition">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1)); }} className="text-gray-400 hover:text-white transition">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1 text-center">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} className="text-xs font-semibold py-2" style={{color: '#A6192E'}}>{day}</div>
+                      ))}
+                      {(() => {
+                        const year = calendarDate.getFullYear();
+                        const month = calendarDate.getMonth();
+                        const firstDay = new Date(year, month, 1).getDay();
+                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                        const days = [];
+                        for (let i = 0; i < firstDay; i++) days.push(<div key={`empty-${i}`} className="py-3"></div>);
+                        for (let d = 1; d <= daysInMonth; d++) {
+                          const isAvailable = [5,12,19,26].includes(d);
+                          days.push(
+                            <div key={d} className={`text-sm py-3 rounded-lg font-medium transition-all cursor-pointer ${
+                              isAvailable
+                                ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg hover:shadow-xl hover:scale-105' 
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}>{d}</div>
+                          );
+                        }
+                        return days;
+                      })()}
+                    </div>
+                    <div className="mt-4 flex items-center gap-4 text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-gradient-to-br from-green-500 to-green-600"></div>
+                        <span className="text-gray-300">Available</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-gray-700"></div>
+                        <span className="text-gray-300">Unavailable</span>
+                      </div>
+                    </div>
                   </div>
 
                   <button onClick={(e) => { e.stopPropagation(); handleSendRequest(selectedUser.id); setSelectedUser(null); }} className="w-full py-3 text-white rounded-lg font-medium" style={{backgroundColor: '#A6192E'}}>Connect</button>

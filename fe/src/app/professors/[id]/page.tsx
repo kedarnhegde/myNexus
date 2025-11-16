@@ -18,9 +18,10 @@ export default function ProfessorPage() {
       const res = await fetch(`http://localhost:8000/professors/${params.id}`);
       const data = await res.json();
       setProfessor(data.professor);
-      setCourses(data.courses_taught);
+      setCourses(Array.isArray(data.courses) ? data.courses : []);
     } catch (error) {
       console.error('Error fetching professor:', error);
+      setCourses([]);
     }
   };
 
@@ -64,7 +65,7 @@ export default function ProfessorPage() {
                     <div
                       key={course.section_id}
                       className="border border-gray-800 rounded-lg p-4 hover:bg-gray-800 cursor-pointer"
-                      onClick={() => router.push(`/courses/${course.section_id}`)}
+                      onClick={() => router.push(`/courses/${course.course_id}`)}
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -79,30 +80,19 @@ export default function ProfessorPage() {
                           </div>
                           <div className="flex gap-2 mt-2">
                             {course.exam_format && (
-                              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                              <span className="text-xs bg-purple-900 text-purple-300 px-2 py-1 rounded">
                                 {course.exam_format}
                               </span>
                             )}
                             {course.grading_style && (
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                              <span className="text-xs bg-green-900 text-green-300 px-2 py-1 rounded">
                                 {course.grading_style}
                               </span>
                             )}
                           </div>
                         </div>
                       </div>
-                      {course.syllabus_url && (
-                        <a
-                          href={course.syllabus_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm hover:underline mt-2 inline-block"
-                          style={{color: '#A6192E'}}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          📄 View Syllabus
-                        </a>
-                      )}
+
                     </div>
                   ))
                 )}

@@ -10,7 +10,7 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState([]);
   const [professors, setProfessors] = useState([]);
   const [popularProfs, setPopularProfs] = useState([]);
-  const [departments, setDepartments] = useState([]);
+  const [departments, setDepartments] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'courses' | 'professors'>('courses');
 
   useEffect(() => {
@@ -31,9 +31,10 @@ export default function CoursesPage() {
     try {
       const res = await fetch('http://localhost:8000/departments');
       const data = await res.json();
-      setDepartments(data);
+      setDepartments(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching departments:', error);
+      setDepartments([]);
     }
   };
 
@@ -41,9 +42,10 @@ export default function CoursesPage() {
     try {
       const res = await fetch('http://localhost:8000/professors/popular');
       const data = await res.json();
-      setPopularProfs(data);
+      setPopularProfs(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching popular professors:', error);
+      setPopularProfs([]);
     }
   };
 
@@ -55,10 +57,10 @@ export default function CoursesPage() {
       
       const res = await fetch(`http://localhost:8000/courses/search?${params}`);
       const data = await res.json();
-      console.log('Courses fetched:', data);
-      setCourses(data);
+      setCourses(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error searching courses:', error);
+      setCourses([]);
     }
   };
 
@@ -70,9 +72,10 @@ export default function CoursesPage() {
       
       const res = await fetch(`http://localhost:8000/professors/search?${params}`);
       const data = await res.json();
-      setProfessors(data);
+      setProfessors(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error searching professors:', error);
+      setProfessors([]);
     }
   };
 
@@ -158,12 +161,24 @@ export default function CoursesPage() {
                       className="bg-gray-900 rounded-lg p-5 hover:bg-gray-800 transition cursor-pointer border border-gray-800"
                     >
                       <div className="flex justify-between items-start">
-                        <div>
+                        <div className="flex-1">
                           <h3 className="font-bold text-lg text-white">{course.code}</h3>
                           <p className="text-gray-300 mt-1">{course.title}</p>
                           <p className="text-sm text-gray-400 mt-2">{course.description}</p>
+                          {course.tags && (
+                            <div className="flex gap-2 flex-wrap mt-3">
+                              {course.tags.split(',').map((tag: string, i: number) => {
+                                const colors = ['bg-blue-900 text-blue-300', 'bg-green-900 text-green-300', 'bg-purple-900 text-purple-300', 'bg-orange-900 text-orange-300', 'bg-pink-900 text-pink-300', 'bg-teal-900 text-teal-300'];
+                                return (
+                                  <span key={i} className={`text-xs px-2 py-1 rounded ${colors[i % colors.length]}`}>
+                                    {tag}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
-                        <span className="text-xs px-3 py-1 rounded-full" style={{backgroundColor: 'rgba(166, 25, 46, 0.2)', color: '#A6192E'}}>
+                        <span className="text-xs px-3 py-1 rounded-full ml-4" style={{backgroundColor: 'rgba(166, 25, 46, 0.2)', color: '#A6192E'}}>
                           {course.department}
                         </span>
                       </div>
