@@ -11,7 +11,12 @@ export default function Home() {
   const [posts, setPosts] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState('home');
+  const [activeSection, setActiveSection] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('activeSection') || 'home';
+    }
+    return 'home';
+  });
   const [connections, setConnections] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -418,32 +423,11 @@ export default function Home() {
       <div className="w-64 bg-gray-900 border-r border-gray-800 p-6">
         <h2 className="text-2xl font-bold mb-8" style={{color: '#A6192E'}}>myNexus</h2>
         <nav className="space-y-4">
-          <button onClick={() => setActiveSection('home')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'home' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+          <button onClick={() => { setActiveSection('home'); localStorage.setItem('activeSection', 'home'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'home' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
             <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
               <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
             </svg>
-            <span className="font-medium text-white">Home</span>
-          </button>
-          
-          <button onClick={() => setActiveSection('peer')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'peer' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
-            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-            </svg>
-            <span className="font-medium text-white">Peer Connect</span>
-          </button>
-          
-          <button onClick={() => setActiveSection('events')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'events' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
-            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-            </svg>
-            <span className="font-medium text-white">Events</span>
-          </button>
-          
-          <button onClick={() => setActiveSection('clubs')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'clubs' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
-            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
-              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-            </svg>
-            <span className="font-medium text-white">Clubs</span>
+            <span className="font-medium text-white">AskSDSU</span>
           </button>
           
           <button onClick={() => router.push('/courses')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'courses' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
@@ -453,7 +437,28 @@ export default function Home() {
             <span className="font-medium text-white">Course Compass</span>
           </button>
           
-          <button onClick={() => setActiveSection('messages')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'messages' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+          <button onClick={() => { setActiveSection('peer'); localStorage.setItem('activeSection', 'peer'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'peer' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+            </svg>
+            <span className="font-medium text-white">Peer Connect</span>
+          </button>
+          
+          <button onClick={() => { setActiveSection('events'); localStorage.setItem('activeSection', 'events'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'events' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+            </svg>
+            <span className="font-medium text-white">Events</span>
+          </button>
+          
+          <button onClick={() => { setActiveSection('clubs'); localStorage.setItem('activeSection', 'clubs'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'clubs' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
+              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+            </svg>
+            <span className="font-medium text-white">Clubs</span>
+          </button>
+          
+          <button onClick={() => { setActiveSection('messages'); localStorage.setItem('activeSection', 'messages'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'messages' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
             <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
               <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
               <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
@@ -461,7 +466,7 @@ export default function Home() {
             <span className="font-medium text-white">Messages</span>
           </button>
           
-          <button onClick={() => setActiveSection('profile')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'profile' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+          <button onClick={() => { setActiveSection('profile'); localStorage.setItem('activeSection', 'profile'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'profile' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
             <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
             </svg>
@@ -480,7 +485,7 @@ export default function Home() {
 
       <div className="flex-1 p-6 overflow-y-auto">
         <h2 className="text-2xl font-bold mb-6 text-white">
-          {activeSection === 'home' ? 'Home' : activeSection === 'peer' ? 'Peer Connect' : activeSection === 'events' ? 'Events' : activeSection === 'clubs' ? 'Clubs' : activeSection === 'courses' ? 'Course Compass' : activeSection === 'messages' ? 'Messages' : 'Profile'}
+          {activeSection === 'home' ? 'AskSDSU' : activeSection === 'peer' ? 'Peer Connect' : activeSection === 'events' ? 'Events' : activeSection === 'clubs' ? 'Clubs' : activeSection === 'courses' ? 'Course Compass' : activeSection === 'messages' ? 'Messages' : 'Profile'}
         </h2>
         
         {activeSection === 'home' && (
@@ -849,9 +854,6 @@ export default function Home() {
             ))}
           </div>
         )}
-        
-
-        
         {activeSection === 'messages' && (
           <div className="space-y-4">
             {messages.map(msg => (
