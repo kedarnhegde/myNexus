@@ -207,6 +207,13 @@ export default function Home() {
             <span className="font-medium text-white">Peer Connect</span>
           </button>
           
+          <button onClick={() => setActiveSection('events')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'events' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+            </svg>
+            <span className="font-medium text-white">Events</span>
+          </button>
+          
           <button onClick={() => setActiveSection('courses')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'courses' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
             <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
               <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
@@ -241,7 +248,7 @@ export default function Home() {
 
       <div className="flex-1 p-6 overflow-y-auto">
         <h2 className="text-2xl font-bold mb-6 text-white">
-          {activeSection === 'home' ? 'Home' : activeSection === 'peer' ? 'Peer Connect' : activeSection === 'courses' ? 'Course Compass' : activeSection === 'messages' ? 'Messages' : 'Profile'}
+          {activeSection === 'home' ? 'Home' : activeSection === 'peer' ? 'Peer Connect' : activeSection === 'events' ? 'Events' : activeSection === 'courses' ? 'Course Compass' : activeSection === 'messages' ? 'Messages' : 'Profile'}
         </h2>
         
         {activeSection === 'home' && (
@@ -331,6 +338,62 @@ export default function Home() {
                   <p className="text-white">{conn.username}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+        
+        {activeSection === 'events' && (
+          <div className="space-y-4">
+            <div className="bg-gray-900 rounded-lg p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-semibold text-white mb-2">SDSU Career Fair 2024</h3>
+                  <p className="text-gray-400 text-sm">📅 March 15, 2024 • 10:00 AM - 4:00 PM</p>
+                  <p className="text-gray-400 text-sm">📍 Montezuma Hall</p>
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-medium" style={{backgroundColor: 'rgba(166, 25, 46, 0.2)', color: '#A6192E'}}>Upcoming</span>
+              </div>
+              <p className="text-gray-300 mb-4">Connect with top employers and explore career opportunities. Bring your resume!</p>
+              <button className="px-4 py-2 text-white rounded-lg text-sm" style={{backgroundColor: '#A6192E'}}>Register</button>
+            </div>
+            
+            <div className="bg-gray-900 rounded-lg p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-semibold text-white mb-2">Study Group: CS 310</h3>
+                  <p className="text-gray-400 text-sm">📅 March 10, 2024 • 6:00 PM - 8:00 PM</p>
+                  <p className="text-gray-400 text-sm">📍 Library Room 204</p>
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-medium" style={{backgroundColor: 'rgba(166, 25, 46, 0.2)', color: '#A6192E'}}>This Week</span>
+              </div>
+              <p className="text-gray-300 mb-4">Join us for a collaborative study session covering data structures and algorithms.</p>
+              <button className="px-4 py-2 text-white rounded-lg text-sm" style={{backgroundColor: '#A6192E'}}>Join</button>
+            </div>
+            
+            <div className="bg-gray-900 rounded-lg p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-semibold text-white mb-2">Aztec Basketball Game</h3>
+                  <p className="text-gray-400 text-sm">📅 March 12, 2024 • 7:00 PM</p>
+                  <p className="text-gray-400 text-sm">📍 Viejas Arena</p>
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-medium" style={{backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#10B981'}}>Free Entry</span>
+              </div>
+              <p className="text-gray-300 mb-4">Cheer on the Aztecs! Free entry for students with valid ID.</p>
+              <button className="px-4 py-2 text-white rounded-lg text-sm" style={{backgroundColor: '#A6192E'}}>Get Tickets</button>
+            </div>
+            
+            <div className="bg-gray-900 rounded-lg p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-semibold text-white mb-2">Tech Workshop: Web Development</h3>
+                  <p className="text-gray-400 text-sm">📅 March 18, 2024 • 3:00 PM - 5:00 PM</p>
+                  <p className="text-gray-400 text-sm">📍 Engineering Building 101</p>
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-medium" style={{backgroundColor: 'rgba(166, 25, 46, 0.2)', color: '#A6192E'}}>Workshop</span>
+              </div>
+              <p className="text-gray-300 mb-4">Learn modern web development with React and Next.js. Laptops required.</p>
+              <button className="px-4 py-2 text-white rounded-lg text-sm" style={{backgroundColor: '#A6192E'}}>Register</button>
             </div>
           </div>
         )}
