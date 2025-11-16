@@ -24,6 +24,49 @@ export default function Home() {
   const [profileData, setProfileData] = useState({username: '', email: '', oldPassword: '', newPassword: '', confirmPassword: ''});
   const [modal, setModal] = useState<{isOpen: boolean, title: string, message: string, type: 'success' | 'error' | 'info'}>({isOpen: false, title: '', message: '', type: 'info'});
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [newPost, setNewPost] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('general');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [showComments, setShowComments] = useState<{[key: number]: boolean}>({});
+  const [comments, setComments] = useState<{[key: number]: any[]}>({});
+  const [newComment, setNewComment] = useState<{[key: number]: string}>({});
+  const [clubs, setClubs] = useState<any[]>([]);
+  const [clubsLoading, setClubsLoading] = useState(true);
+  const [clubFilter, setClubFilter] = useState('All');
+  const [eventModal, setEventModal] = useState({isOpen: false, eventName: '', action: ''});
+  const [userEvents, setUserEvents] = useState<any[]>([]);
+  const [registeredEvents, setRegisteredEvents] = useState<{[key: string]: string}>({});
+  const [userTags, setUserTags] = useState<any[]>([]);
+  const [allTags, setAllTags] = useState<any[]>([]);
+  const [showTagSelector, setShowTagSelector] = useState(false);
+  
+  const getButtonText = (eventName: string, defaultAction: string) => {
+    return registeredEvents[eventName] ? `${registeredEvents[eventName]}ed` : defaultAction;
+  };
+  
+  const handleClubConnect = (clubName: string, url: string) => {
+    window.open(url, '_blank');
+  };
+  
+  const categories = [
+    { value: 'general', label: 'General', icon: '💬' },
+    { value: 'academic', label: 'Academic', icon: '📚' },
+    { value: 'social', label: 'Social', icon: '🎉' },
+    { value: 'jobs', label: 'Jobs/Internships', icon: '💼' },
+    { value: 'housing', label: 'Housing', icon: '🏠' },
+    { value: 'events', label: 'Events', icon: '📅' }
+  ];
+  
+  const fetchPosts = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/posts/?category=${filterCategory}&user_id=${user?.id || ''}`);
+      const data = await res.json();
+      setPosts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setPosts([]);
+    }
+  };
 
   const getTagColor = (tag: string) => {
     const colors: any = {
@@ -51,17 +94,14 @@ export default function Home() {
     const parsedUser = JSON.parse(userData);
     setUser(parsedUser);
     
-    fetch('http://localhost:3000/api/posts/')
-      .then(res => res.json())
-      .then(data => setPosts(data))
-      .catch(err => console.error(err));
+    fetchPosts();
     
-    fetch(`http://localhost:3000/api/messages/${parsedUser.id}`)
+    fetch(`http://localhost:8000/messages/${parsedUser.id}`)
       .then(res => res.json())
       .then(data => setMessages(data))
       .catch(err => console.error(err));
     
-    fetch(`http://localhost:3000/api/connections/${parsedUser.id}`)
+    fetch(`http://localhost:8000/connections/${parsedUser.id}`)
       .then(res => res.json())
       .then(data => {
         setConnections(data);
@@ -70,7 +110,7 @@ export default function Home() {
       .catch(err => console.error(err));
     
     // Load recommended users
-    fetch(`http://localhost:3000/api/users/recommended/${parsedUser.id}`)
+    fetch(`http://localhost:8000/users/recommended/${parsedUser.id}`)
       .then(res => res.json())
       .then(data => setSearchResults(data))
       .catch(err => console.error(err));
@@ -107,13 +147,25 @@ export default function Home() {
     ]);
     setClubsLoading(false);
     
+    // Load all tags
+    fetch('http://localhost:8000/tags/')
+      .then(res => res.json())
+      .then(data => setAllTags(data))
+      .catch(err => console.error(err));
+    
+    // Load user tags
+    fetch(`http://localhost:8000/users/${parsedUser.id}/tags`)
+      .then(res => res.json())
+      .then(data => setUserTags(data))
+      .catch(err => console.error(err));
+    
     setLoading(false);
   }, []);
 
   useEffect(() => {
     if (!user) return;
     
-    fetch(`http://localhost:3000/api/users/recommended/${user.id}`)
+    fetch(`http://localhost:8000/users/recommended/${user.id}`)
       .then(res => res.json())
       .then(data => {
         let filtered = data;
@@ -124,6 +176,12 @@ export default function Home() {
       })
       .catch(err => console.error(err));
   }, [yearFilter, majorFilter, companyFilter, user]);
+  
+  useEffect(() => {
+    if (user) {
+      fetchPosts();
+    }
+  }, [filterCategory, user]);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -131,23 +189,71 @@ export default function Home() {
     router.push('/auth');
   };
 
-  const handleLike = async (postId: number) => {
+  const handleVote = async (postId: number, value: number) => {
     try {
-      await fetch(`http://localhost:3000/api/posts/${postId}/like?user_id=${user.id}`, {
+      await fetch(`http://localhost:8000/posts/${postId}/vote?user_id=${user.id}&value=${value}`, {
         method: 'POST'
       });
-      const res = await fetch('http://localhost:3000/api/posts/');
-      const data = await res.json();
-      setPosts(data);
+      fetchPosts();
     } catch (err) {
       console.error(err);
+    }
+  };
+  
+  const handleCreatePost = async () => {
+    if (!newPost.trim()) return;
+    try {
+      const res = await fetch('http://localhost:8000/posts/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newPost, user_id: user.id, category: selectedCategory })
+      });
+      if (!res.ok) throw new Error('Failed to create post');
+      setNewPost('');
+      setSelectedCategory('general');
+      fetchPosts();
+      setModal({isOpen: true, title: 'Success', message: 'Post created successfully!', type: 'success'});
+    } catch (err: any) {
+      setModal({isOpen: true, title: 'Error', message: 'Failed to create post', type: 'error'});
+    }
+  };
+  
+  const fetchComments = async (postId: number) => {
+    try {
+      const res = await fetch(`http://localhost:8000/posts/${postId}/comments`);
+      const data = await res.json();
+      setComments(prev => ({...prev, [postId]: data}));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  
+  const handleAddComment = async (postId: number) => {
+    const content = newComment[postId]?.trim();
+    if (!content) return;
+    try {
+      await fetch(`http://localhost:8000/posts/${postId}/comments?content=${encodeURIComponent(content)}&user_id=${user.id}`, {
+        method: 'POST'
+      });
+      setNewComment(prev => ({...prev, [postId]: ''}));
+      fetchComments(postId);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  
+  const toggleComments = (postId: number) => {
+    const isShowing = showComments[postId];
+    setShowComments(prev => ({...prev, [postId]: !isShowing}));
+    if (!isShowing && !comments[postId]) {
+      fetchComments(postId);
     }
   };
 
   const handleSearch = async () => {
     if (!searchQuery) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/users/search/${searchQuery}?current_user_id=${user.id}`);
+      const res = await fetch(`http://localhost:8000/users/search?current_user_id=${user.id}&query=${searchQuery}`);
       const data = await res.json();
       setSearchResults(data);
     } catch (err) {
@@ -157,10 +263,10 @@ export default function Home() {
 
   const handleSendRequest = async (friendId: number) => {
     try {
-      await fetch(`http://localhost:3000/api/connections/?user_id=${user.id}&friend_id=${friendId}`, {
+      await fetch(`http://localhost:8000/connections/?user_id=${user.id}&friend_id=${friendId}`, {
         method: 'POST'
       });
-      const res = await fetch(`http://localhost:3000/api/connections/${user.id}`);
+      const res = await fetch(`http://localhost:8000/connections/${user.id}`);
       const data = await res.json();
       setConnections(data);
       setSearchResults(prev => prev.filter(u => u.id !== friendId));
@@ -172,10 +278,10 @@ export default function Home() {
 
   const handleAcceptRequest = async (connectionId: number) => {
     try {
-      await fetch(`http://localhost:3000/api/connections/${connectionId}?status=accepted`, {
+      await fetch(`http://localhost:8000/connections/${connectionId}?status=accepted`, {
         method: 'PUT'
       });
-      const res = await fetch(`http://localhost:3000/api/connections/${user.id}`);
+      const res = await fetch(`http://localhost:8000/connections/${user.id}`);
       const data = await res.json();
       setConnections(data);
     } catch (err) {
@@ -197,6 +303,29 @@ export default function Home() {
     setRegisteredEvents(prev => ({...prev, [eventModal.eventName]: eventModal.action}));
     setModal({isOpen: true, title: 'Success', message: `Successfully ${eventModal.action.toLowerCase()}ed for ${eventModal.eventName}!`, type: 'success'});
     setEventModal({isOpen: false, eventName: '', action: ''});
+  };
+
+  const handleAddTag = async (tagId: number) => {
+    try {
+      await fetch(`http://localhost:8000/users/${user.id}/tags/${tagId}`, { method: 'POST' });
+      const res = await fetch(`http://localhost:8000/users/${user.id}/tags`);
+      const data = await res.json();
+      setUserTags(data);
+      setShowTagSelector(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  
+  const handleRemoveTag = async (tagId: number) => {
+    try {
+      await fetch(`http://localhost:8000/users/${user.id}/tags/${tagId}`, { method: 'DELETE' });
+      const res = await fetch(`http://localhost:8000/users/${user.id}/tags`);
+      const data = await res.json();
+      setUserTags(data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleUpdateProfile = async () => {
@@ -223,8 +352,8 @@ export default function Home() {
       }
       
       const url = profileData.newPassword 
-        ? `http://localhost:3000/api/users/${user.id}?old_password=${encodeURIComponent(profileData.oldPassword)}`
-        : `http://localhost:3000/api/users/${user.id}`;
+        ? `http://localhost:8000/users/${user.id}?old_password=${encodeURIComponent(profileData.oldPassword)}`
+        : `http://localhost:8000/users/${user.id}`;
       
       const res = await fetch(url, {
         method: 'PUT',
@@ -355,24 +484,131 @@ export default function Home() {
         
         {activeSection === 'home' && (
           <div className="space-y-4">
+            <div className="bg-gray-900 rounded-lg p-6">
+              <textarea
+                placeholder="What's on your mind?"
+                className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none mb-3"
+                rows={3}
+                value={newPost}
+                onChange={(e) => setNewPost(e.target.value)}
+              />
+              <div className="flex gap-3">
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none"
+                >
+                  {categories.map(cat => (
+                    <option key={cat.value} value={cat.value}>{cat.icon} {cat.label}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleCreatePost}
+                  className="px-6 py-2 text-white rounded-lg font-medium"
+                  style={{backgroundColor: '#A6192E'}}
+                >
+                  Post
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="px-4 py-2 bg-gray-900 text-white rounded-lg border border-gray-700 focus:outline-none"
+              >
+                <option value="all">All Posts</option>
+                {categories.map(cat => (
+                  <option key={cat.value} value={cat.value}>{cat.icon} {cat.label}</option>
+                ))}
+              </select>
+            </div>
+
             {posts.map(post => (
               <div key={post.id} className="bg-gray-900 rounded-lg shadow p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{backgroundColor: '#A6192E'}}>
                     {post.username[0].toUpperCase()}
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="font-semibold text-white">{post.username}</p>
                     <p className="text-sm text-gray-500">{new Date(post.created_at).toLocaleDateString()}</p>
                   </div>
+                  <span className="px-3 py-1 rounded-full text-xs" style={{backgroundColor: 'rgba(166, 25, 46, 0.2)', color: '#A6192E'}}>
+                    {categories.find(c => c.value === post.category)?.label || post.category}
+                  </span>
                 </div>
                 <p className="mb-4 text-gray-300">{post.content}</p>
-                <button onClick={() => handleLike(post.id)} className="flex items-center gap-2 text-gray-400 hover:text-red-600">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-                  </svg>
-                  <span>{post.likes_count}</span>
-                </button>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleVote(post.id, 1)}
+                      className="p-1 rounded transition"
+                      style={{color: post.user_vote === 1 ? '#A6192E' : '#9CA3AF'}}
+                    >
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                    <span className="text-white font-medium">{post.likes_count}</span>
+                    <button
+                      onClick={() => handleVote(post.id, -1)}
+                      className="p-1 rounded transition"
+                      style={{color: post.user_vote === -1 ? '#A6192E' : '#9CA3AF'}}
+                    >
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => toggleComments(post.id)}
+                    className="flex items-center gap-1 text-gray-400 hover:text-blue-500 transition"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm">{post.comments_count || 0} Comments</span>
+                  </button>
+                </div>
+                {showComments[post.id] && (
+                  <div className="mt-4 pt-4 border-t border-gray-800">
+                    <div className="flex gap-2 mb-4">
+                      <input
+                        type="text"
+                        placeholder="Write a comment..."
+                        className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none text-sm"
+                        value={newComment[post.id] || ''}
+                        onChange={(e) => setNewComment({...newComment, [post.id]: e.target.value})}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id)}
+                      />
+                      <button
+                        onClick={() => handleAddComment(post.id)}
+                        className="px-4 py-2 text-white rounded-lg text-sm"
+                        style={{backgroundColor: '#A6192E'}}
+                      >
+                        Post
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {comments[post.id]?.map(comment => (
+                        <div key={comment.id} className="flex gap-2">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{backgroundColor: '#A6192E'}}>
+                            {comment.username[0].toUpperCase()}
+                          </div>
+                          <div className="flex-1 bg-gray-800 rounded-lg p-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-white text-sm font-medium">{comment.username}</span>
+                              <span className="text-gray-500 text-xs">{new Date(comment.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <p className="text-gray-300 text-sm">{comment.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -464,27 +700,59 @@ export default function Home() {
               )}
             </div>
             
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white">Pending Requests</h3>
-              {connections.filter(c => c.status === 'pending' && !c.is_sender).map(conn => (
-                <div key={conn.id} className="bg-gray-900 p-4 rounded-lg flex justify-between items-center">
-                  <p className="text-white">{conn.username}</p>
-                  <button
-                    onClick={() => handleAcceptRequest(conn.id)}
-                    className="px-4 py-2 text-white rounded-lg text-sm"
-                    style={{backgroundColor: '#A6192E'}}
-                  >
-                    Accept
-                  </button>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4">Pending Requests</h3>
+                <div className="grid grid-cols-4 gap-4">
+                  {connections.filter(c => c.status === 'pending' && !c.is_sender).map(conn => (
+                    <div key={conn.id} className="bg-gray-900 rounded-lg overflow-hidden">
+                      <img src={`https://ui-avatars.com/api/?name=${conn.username}&size=300&background=random&color=fff&bold=true`} alt={conn.username} className="w-full h-32 object-cover" />
+                      <div className="p-4">
+                        <p className="text-white font-semibold text-lg mb-3">{conn.username}</p>
+                        {conn.bio && <p className="text-gray-300 text-xs mb-3 line-clamp-2">{conn.bio}</p>}
+                        {conn.tags && conn.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {conn.tags.slice(0, 3).map((tag: string) => (
+                              <span key={tag} className={`px-2 py-1 text-white text-xs rounded ${getTagColor(tag)}`}>{tag}</span>
+                            ))}
+                            {conn.tags.length > 3 && <span className="px-2 py-1 bg-gray-700 text-white text-xs rounded">+{conn.tags.length - 3}</span>}
+                          </div>
+                        )}
+                        <button
+                          onClick={() => handleAcceptRequest(conn.id)}
+                          className="w-full py-2 text-white rounded-lg text-sm font-medium"
+                          style={{backgroundColor: '#A6192E'}}
+                        >
+                          Accept
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
               
-              <h3 className="text-lg font-semibold text-white mt-6">Friends</h3>
-              {connections.filter(c => c.status === 'accepted').map(conn => (
-                <div key={conn.id} className="bg-gray-900 p-4 rounded-lg">
-                  <p className="text-white">{conn.username}</p>
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4">Friends</h3>
+                <div className="grid grid-cols-4 gap-4">
+                  {connections.filter(c => c.status === 'accepted').map(conn => (
+                    <div key={conn.id} className="bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-800 transition" onClick={() => setSelectedUser(conn)}>
+                      <img src={`https://ui-avatars.com/api/?name=${conn.username}&size=300&background=random&color=fff&bold=true`} alt={conn.username} className="w-full h-32 object-cover" />
+                      <div className="p-4">
+                        <p className="text-white font-semibold text-lg mb-3">{conn.username}</p>
+                        {conn.bio && <p className="text-gray-300 text-xs mb-3 line-clamp-2">{conn.bio}</p>}
+                        {conn.tags && conn.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {conn.tags.slice(0, 3).map((tag: string) => (
+                              <span key={tag} className={`px-2 py-1 text-white text-xs rounded ${getTagColor(tag)}`}>{tag}</span>
+                            ))}
+                            {conn.tags.length > 3 && <span className="px-2 py-1 bg-gray-700 text-white text-xs rounded">+{conn.tags.length - 3}</span>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         )}
@@ -707,6 +975,65 @@ export default function Home() {
                     </div>
                   </>
                 )}
+              </div>
+              
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <label className="block text-sm font-medium text-gray-400">My Tags</label>
+                  {!showTagSelector && (
+                    <button
+                      onClick={() => setShowTagSelector(true)}
+                      className="px-4 py-2 text-white rounded-lg text-sm font-medium"
+                      style={{backgroundColor: '#A6192E'}}
+                    >
+                      + Add Tag
+                    </button>
+                  )}
+                </div>
+                
+                {showTagSelector && (
+                  <div className="mb-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="text-white text-sm font-medium">Select a tag to add:</p>
+                      <button
+                        onClick={() => setShowTagSelector(false)}
+                        className="text-gray-400 hover:text-white"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
+                      {allTags.filter(t => !userTags.find(ut => ut.id === t.id)).map(tag => (
+                        <button
+                          key={tag.id}
+                          onClick={() => handleAddTag(tag.id)}
+                          className={`px-3 py-2 text-white text-sm rounded ${getTagColor(tag.name)} hover:opacity-80 transition`}
+                        >
+                          + {tag.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex flex-wrap gap-2">
+                  {userTags.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No tags added yet. Click "Add Tag" to get started.</p>
+                  ) : (
+                    userTags.map(tag => (
+                      <div key={tag.id} className={`px-3 py-2 text-white text-sm rounded ${getTagColor(tag.name)} flex items-center gap-2`}>
+                        <span>{tag.name}</span>
+                        <button 
+                          onClick={() => handleRemoveTag(tag.id)} 
+                          className="hover:text-red-300 font-bold text-lg leading-none"
+                          title="Remove tag"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
             

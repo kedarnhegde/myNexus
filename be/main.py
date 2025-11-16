@@ -7,9 +7,10 @@ from dotenv import load_dotenv
 
 from database import SessionLocal, engine, get_db
 from models import Base, User, Post, PostLike, Comment, Message, Connection, UserProfile, Tag, UserTag, UserCourse
-from schemas import UserCreate, UserUpdate, User as UserSchema
+from schemas import UserCreate, UserUpdate, User as UserSchema, PostCreate
 from auth_schemas import LoginRequest, LoginResponse
 from typing import Optional
+from sqlalchemy import func
 
 load_dotenv()
 
@@ -24,8 +25,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.include_router(clubs_router, prefix="/api")
 
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -109,38 +108,81 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return {"message": "User deleted successfully"}
 
 @app.get("/posts/")
-def get_posts(db: Session = Depends(get_db)):
-    posts = db.query(Post).order_by(Post.created_at.desc()).all()
+def get_posts(category: Optional[str] = None, user_id: Optional[int] = None, db: Session = Depends(get_db)):
+    query = db.query(Post)
+    if category and category != 'all':
+        query = query.filter(Post.category == category)
+    posts = query.order_by(Post.created_at.desc()).all()
     result = []
     for post in posts:
         user = db.query(User).filter(User.id == post.user_id).first()
+        votes_sum = db.query(func.sum(PostLike.value)).filter(PostLike.post_id == post.id).scalar() or 0
+        comments_count = db.query(Comment).filter(Comment.post_id == post.id).count()
+        user_vote = None
+        if user_id:
+            user_like = db.query(PostLike).filter(PostLike.post_id == post.id, PostLike.user_id == user_id).first()
+            user_vote = user_like.value if user_like else None
         result.append({
             "id": post.id,
             "content": post.content,
-            "likes_count": post.likes_count,
+            "category": post.category,
+            "likes_count": votes_sum,
+            "comments_count": comments_count,
             "created_at": post.created_at,
-            "username": user.username if user else "Unknown"
+            "username": user.username if user else "Unknown",
+            "user_id": post.user_id,
+            "user_vote": user_vote
         })
     return result
 
-@app.post("/posts/{post_id}/like")
-def like_post(post_id: int, user_id: int, db: Session = Depends(get_db)):
-    existing_like = db.query(PostLike).filter(
-        PostLike.post_id == post_id,
-        PostLike.user_id == user_id
-    ).first()
-    
-    if existing_like:
-        db.delete(existing_like)
-        db.query(Post).filter(Post.id == post_id).update({"likes_count": Post.likes_count - 1})
-        db.commit()
-        return {"liked": False}
+@app.post("/posts/")
+def create_post(post: PostCreate, db: Session = Depends(get_db)):
+    db_post = Post(content=post.content, user_id=post.user_id, category=post.category)
+    db.add(db_post)
+    db.commit()
+    db.refresh(db_post)
+    return {"id": db_post.id, "content": db_post.content, "category": db_post.category}
+
+@app.post("/posts/{post_id}/vote")
+def vote_post(post_id: int, user_id: int, value: int, db: Session = Depends(get_db)):
+    existing = db.query(PostLike).filter(PostLike.post_id == post_id, PostLike.user_id == user_id).first()
+    if existing:
+        if existing.value == value:
+            db.delete(existing)
+            db.commit()
+            return {"voted": False}
+        else:
+            existing.value = value
+            db.commit()
+            return {"voted": True, "value": value}
     else:
-        like = PostLike(post_id=post_id, user_id=user_id)
+        like = PostLike(post_id=post_id, user_id=user_id, value=value)
         db.add(like)
-        db.query(Post).filter(Post.id == post_id).update({"likes_count": Post.likes_count + 1})
         db.commit()
-        return {"liked": True}
+        return {"voted": True, "value": value}
+
+@app.get("/posts/{post_id}/comments")
+def get_comments(post_id: int, db: Session = Depends(get_db)):
+    comments = db.query(Comment).filter(Comment.post_id == post_id).order_by(Comment.created_at.asc()).all()
+    result = []
+    for comment in comments:
+        user = db.query(User).filter(User.id == comment.user_id).first()
+        result.append({
+            "id": comment.id,
+            "content": comment.content,
+            "username": user.username if user else "Unknown",
+            "created_at": comment.created_at
+        })
+    return result
+
+@app.post("/posts/{post_id}/comments")
+def add_comment(post_id: int, user_id: int, content: str, db: Session = Depends(get_db)):
+    comment = Comment(post_id=post_id, user_id=user_id, content=content)
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    user = db.query(User).filter(User.id == user_id).first()
+    return {"id": comment.id, "content": comment.content, "username": user.username if user else "Unknown", "created_at": comment.created_at}
 
 @app.get("/messages/{user_id}")
 def get_messages(user_id: int, db: Session = Depends(get_db)):
@@ -299,13 +341,19 @@ def get_connections(user_id: int, db: Session = Depends(get_db)):
     for conn in connections:
         other_user_id = conn.friend_id if conn.user_id == user_id else conn.user_id
         other_user = db.query(User).filter(User.id == other_user_id).first()
-        result.append({
-            "id": conn.id,
-            "user_id": other_user_id,
-            "username": other_user.username if other_user else "Unknown",
-            "status": conn.status,
-            "is_sender": conn.user_id == user_id
-        })
+        if other_user:
+            profile = db.query(UserProfile).filter(UserProfile.user_id == other_user.id).first()
+            tags = db.query(Tag).join(UserTag).filter(UserTag.user_id == other_user.id).all()
+            result.append({
+                "id": conn.id,
+                "user_id": other_user_id,
+                "username": other_user.username,
+                "email": other_user.email,
+                "bio": profile.bio if profile else None,
+                "tags": [t.name for t in tags],
+                "status": conn.status,
+                "is_sender": conn.user_id == user_id
+            })
     return result
 
 @app.put("/connections/{connection_id}")
@@ -317,3 +365,32 @@ def update_connection(connection_id: int, status: str, db: Session = Depends(get
     connection.status = status
     db.commit()
     return {"message": "Connection updated"}
+
+@app.get("/tags/")
+def get_all_tags(db: Session = Depends(get_db)):
+    tags = db.query(Tag).all()
+    return [{"id": t.id, "name": t.name} for t in tags]
+
+@app.get("/users/{user_id}/tags")
+def get_user_tags(user_id: int, db: Session = Depends(get_db)):
+    tags = db.query(Tag).join(UserTag).filter(UserTag.user_id == user_id).all()
+    return [{"id": t.id, "name": t.name} for t in tags]
+
+@app.post("/users/{user_id}/tags/{tag_id}")
+def add_user_tag(user_id: int, tag_id: int, db: Session = Depends(get_db)):
+    existing = db.query(UserTag).filter(UserTag.user_id == user_id, UserTag.tag_id == tag_id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Tag already added")
+    user_tag = UserTag(user_id=user_id, tag_id=tag_id)
+    db.add(user_tag)
+    db.commit()
+    return {"message": "Tag added"}
+
+@app.delete("/users/{user_id}/tags/{tag_id}")
+def remove_user_tag(user_id: int, tag_id: int, db: Session = Depends(get_db)):
+    user_tag = db.query(UserTag).filter(UserTag.user_id == user_id, UserTag.tag_id == tag_id).first()
+    if not user_tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    db.delete(user_tag)
+    db.commit()
+    return {"message": "Tag removed"}
