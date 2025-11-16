@@ -26,14 +26,3 @@ class PostCreate(BaseModel):
     content: str
     user_id: int
     category: str = "general"
-
-class Post(BaseModel):
-    id: int
-    content: str
-    category: str
-    likes_count: int
-    created_at: datetime
-    username: str
-
-    class Config:
-        from_attributes = True
