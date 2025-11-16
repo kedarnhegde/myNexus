@@ -19,8 +19,8 @@ install-fe:
 	cd fe && npm install
 
 # Install all dependencies
-install-all: setup-venv install-backend install-frontend
+install-all: setup-venv install-be install-fe
 
 # Run both frontend and backend
 dev:
-	make run-backend & make run-frontend
+	make run-be & make run-fe
