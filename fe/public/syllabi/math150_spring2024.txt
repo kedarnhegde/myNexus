@@ -1,0 +1,43 @@
+MATH-150: Calculus I - Spring 2024
+SDSU Mathematics Department
+
+Instructor: Dr. James Wilson
+Email: jwilson@sdsu.edu
+Office Hours: TTh 10:00 AM-12:00 PM
+
+Course Description:
+Differential calculus including limits, derivatives, and applications. Introduction to integral calculus.
+
+Learning Objectives:
+- Understand limits and continuity
+- Calculate derivatives using various techniques
+- Apply derivatives to optimization problems
+- Understand the Fundamental Theorem of Calculus
+
+Grading:
+- Exams (3 x 20% = 60%)
+- Final Exam (25%)
+- Homework (15%)
+
+Required Materials:
+- Calculus: Early Transcendentals (9th Edition) by Stewart
+- Scientific calculator (graphing calculator recommended)
+- WebAssign access code
+
+Schedule:
+Week 1-2: Limits and Continuity
+Week 3-4: Derivatives and Rules
+Week 5: Exam 1
+Week 6-7: Applications of Derivatives
+Week 8-9: Related Rates and Optimization
+Week 10: Exam 2
+Week 11-12: Integration Basics
+Week 13-14: Fundamental Theorem of Calculus
+Week 15: Exam 3
+Week 16: Final Exam
+
+Policies:
+- Homework due weekly via WebAssign
+- No makeup exams except medical emergencies
+- Attendance not mandatory but highly recommended
+- Tutoring available at Math Learning Center

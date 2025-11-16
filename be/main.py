@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 
 from database import SessionLocal, engine, get_db
-from models import Base, User, Post, PostLike, Comment, Message, Connection, UserProfile, Tag, UserTag, UserCourse
+from models import Base, User, Post, PostLike, Comment, Message, Connection, UserProfile, Tag, UserTag, UserCourse, Professor, Course, CourseSection, Review, Question
 from schemas import UserCreate, UserUpdate, User as UserSchema, PostCreate
 from schemas import UserCreate, UserUpdate, User as UserSchema, PostCreate
 from auth_schemas import LoginRequest, LoginResponse
@@ -248,6 +248,7 @@ def get_recommended_users(user_id: int, db: Session = Depends(get_db)):
             "year": profile.year if profile else None,
             "major": profile.major if profile else None,
             "bio": profile.bio if profile else None,
+            "clubs": profile.clubs if profile else None,
             "tags": [t.name for t in tags],
             "courses": [c.course_code for c in courses],
             "matching_tags": matching_tags
@@ -396,3 +397,232 @@ def remove_user_tag(user_id: int, tag_id: int, db: Session = Depends(get_db)):
     db.delete(user_tag)
     db.commit()
     return {"message": "Tag removed"}
+
+@app.get("/departments")
+def get_departments(db: Session = Depends(get_db)):
+    depts = db.query(Course.department).distinct().all()
+    return sorted([d[0] for d in depts])
+
+@app.get("/courses/search")
+def search_courses(query: str = "", department: str = "", db: Session = Depends(get_db)):
+    courses_query = db.query(Course)
+    if query:
+        courses_query = courses_query.filter(
+            (Course.code.like(f"%{query}%")) | (Course.title.like(f"%{query}%"))
+        )
+    if department:
+        courses_query = courses_query.filter(Course.department == department)
+    courses = courses_query.all()
+    return [{"id": c.id, "code": c.code, "title": c.title, "description": c.description, "department": c.department, "tags": c.tags} for c in courses]
+
+@app.get("/user-courses/{user_id}")
+def get_user_courses(user_id: int, db: Session = Depends(get_db)):
+    courses = db.query(UserCourse).filter(UserCourse.user_id == user_id).all()
+    return [{"id": c.id, "course_code": c.course_code, "course_name": c.course_name, "semester": c.semester} for c in courses]
+
+@app.post("/user-courses/")
+def add_user_course(user_id: int, course_code: str, course_name: str, semester: str, db: Session = Depends(get_db)):
+    course = UserCourse(user_id=user_id, course_code=course_code, course_name=course_name, semester=semester)
+    db.add(course)
+    db.commit()
+    db.refresh(course)
+    return {"id": course.id, "course_code": course.course_code, "course_name": course.course_name, "semester": course.semester}
+
+@app.delete("/user-courses/{course_id}")
+def delete_user_course(course_id: int, db: Session = Depends(get_db)):
+    course = db.query(UserCourse).filter(UserCourse.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    db.delete(course)
+    db.commit()
+    return {"message": "Course removed"}
+
+@app.get("/professors/popular")
+def get_popular_professors(db: Session = Depends(get_db)):
+    profs = db.query(Professor).filter(Professor.total_reviews > 0).order_by(Professor.avg_rating.desc()).limit(5).all()
+    return [{"id": p.id, "name": p.name, "department": p.department, "avg_rating": p.avg_rating, "total_reviews": p.total_reviews} for p in profs]
+
+@app.get("/professors/search")
+def search_professors(query: str = "", department: str = "", db: Session = Depends(get_db)):
+    profs_query = db.query(Professor)
+    if query:
+        profs_query = profs_query.filter(Professor.name.like(f"%{query}%"))
+    if department:
+        profs_query = profs_query.filter(Professor.department == department)
+    profs = profs_query.all()
+    return [{"id": p.id, "name": p.name, "department": p.department, "avg_rating": p.avg_rating, "avg_difficulty": p.avg_difficulty, "would_take_again_percent": p.would_take_again_percent, "total_reviews": p.total_reviews} for p in profs]
+
+@app.get("/professors/{professor_id}")
+def get_professor_detail(professor_id: int, db: Session = Depends(get_db)):
+    prof = db.query(Professor).filter(Professor.id == professor_id).first()
+    if not prof:
+        raise HTTPException(status_code=404, detail="Professor not found")
+    sections = db.query(CourseSection).filter(CourseSection.professor_id == professor_id).all()
+    courses_data = []
+    for s in sections:
+        course = db.query(Course).filter(Course.id == s.course_id).first()
+        if course:
+            courses_data.append({
+                "course_id": course.id, "course_code": course.code, "course_title": course.title,
+                "section_id": s.id, "section_number": s.section_number, "semester": s.semester,
+                "schedule": s.schedule, "location": s.location, "exam_format": s.exam_format,
+                "grading_style": s.grading_style
+            })
+    return {"professor": {"id": prof.id, "name": prof.name, "department": prof.department, "email": prof.email, "avg_rating": prof.avg_rating, "avg_difficulty": prof.avg_difficulty, "would_take_again_percent": prof.would_take_again_percent, "total_reviews": prof.total_reviews}, "courses": courses_data}
+
+@app.get("/courses/{course_id}")
+def get_course_detail(course_id: int, db: Session = Depends(get_db)):
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    sections = db.query(CourseSection).filter(CourseSection.course_id == course_id).all()
+    sections_data = []
+    for s in sections:
+        prof = db.query(Professor).filter(Professor.id == s.professor_id).first()
+        sections_data.append({
+            "section_id": s.id, "section_number": s.section_number, "professor_name": prof.name if prof else "Unknown",
+            "professor_rating": prof.avg_rating if prof else 0, "semester": s.semester, "schedule": s.schedule,
+            "location": s.location, "syllabus_url": s.syllabus_url, "exam_format": s.exam_format, "grading_style": s.grading_style,
+            "tags": s.tags
+        })
+    return {"course": {"id": course.id, "code": course.code, "title": course.title, "description": course.description, "department": course.department, "credits": course.credits}, "sections": sections_data}
+
+@app.get("/sections/{section_id}/reviews")
+def get_section_reviews(section_id: int, db: Session = Depends(get_db)):
+    reviews = db.query(Review).filter(Review.section_id == section_id).all()
+    result = []
+    for r in reviews:
+        user = db.query(User).filter(User.id == r.user_id).first()
+        result.append({
+            "id": r.id, "username": user.username if user else "Anonymous", "rating": r.rating,
+            "difficulty": r.difficulty, "workload": r.workload, "would_take_again": r.would_take_again,
+            "grade_received": r.grade_received, "attendance_mandatory": r.attendance_mandatory,
+            "content": r.content, "tags": r.tags, "created_at": r.created_at
+        })
+    return result
+
+@app.get("/sections/{section_id}/questions")
+def get_section_questions(section_id: int, db: Session = Depends(get_db)):
+    questions = db.query(Question).filter(Question.section_id == section_id).all()
+    result = []
+    for q in questions:
+        user = db.query(User).filter(User.id == q.user_id).first()
+        result.append({
+            "id": q.id, "username": user.username if user else "Anonymous", "title": q.title,
+            "content": q.content, "upvotes": q.upvotes, "answer_count": q.answer_count, "created_at": q.created_at
+        })
+    return result
+
+@app.get("/syllabus/{section_id}")
+def get_syllabus(section_id: int, db: Session = Depends(get_db)):
+    section = db.query(CourseSection).filter(CourseSection.id == section_id).first()
+    if not section:
+        raise HTTPException(status_code=404, detail="Section not found")
+    course = db.query(Course).filter(Course.id == section.course_id).first()
+    prof = db.query(Professor).filter(Professor.id == section.professor_id).first()
+    
+    syllabus = f"""COURSE SYLLABUS
+{course.code}: {course.title}
+{section.semester} - Section {section.section_number}
+
+INSTRUCTOR: {prof.name if prof else 'TBA'}
+EMAIL: {prof.email if prof else 'TBA'}
+SCHEDULE: {section.schedule}
+LOCATION: {section.location}
+
+COURSE DESCRIPTION:
+{course.description}
+
+GRADING:
+{section.grading_style}
+Exam Format: {section.exam_format}
+
+WEEKLY SCHEDULE:
+
+Week 1: Introduction and Course Overview
+- Course objectives and expectations
+- Introduction to key concepts
+- Syllabus review
+
+Week 2: Fundamentals Part 1
+- Core principles and theories
+- Reading assignments
+- Quiz 1
+
+Week 3: Fundamentals Part 2
+- Advanced concepts
+- Group discussion
+- Assignment 1 due
+
+Week 4: Practical Applications
+- Case studies
+- Lab work
+- Project proposal due
+
+Week 5: Mid-term Review
+- Review sessions
+- Practice problems
+- Study guide provided
+
+Week 6: MIDTERM EXAM
+
+Week 7: Advanced Topics Part 1
+- Specialized concepts
+- Guest lecture
+- Assignment 2 due
+
+Week 8: Advanced Topics Part 2
+- Research methods
+- Group presentations begin
+
+Week 9: Advanced Topics Part 3
+- Current trends
+- Industry applications
+- Quiz 2
+
+Week 10: Project Work
+- Project development
+- Peer reviews
+- Draft submissions
+
+Week 11: Integration and Synthesis
+- Connecting concepts
+- Real-world examples
+- Assignment 3 due
+
+Week 12: Special Topics
+- Emerging issues
+- Student presentations
+
+Week 13: Review and Q&A
+- Comprehensive review
+- Final project presentations
+
+Week 14: Final Exam Preparation
+- Study sessions
+- Office hours
+
+Week 15: FINAL EXAM
+
+GRADING BREAKDOWN:
+- Midterm Exam: 25%
+- Final Exam: 30%
+- Assignments: 25%
+- Project: 15%
+- Participation: 5%
+
+REQUIRED MATERIALS:
+- Textbook (see course website)
+- Access to online learning platform
+- Calculator (for applicable courses)
+
+ATTENDANCE POLICY:
+Attendance is {'mandatory' if section.exam_format == 'Midterm + Final' else 'recommended but not mandatory'}.
+
+ACADEMIC INTEGRITY:
+All work must be original. Plagiarism will result in course failure.
+
+OFFICE HOURS:
+By appointment - email to schedule
+"""
+    return {"content": syllabus, "course_code": course.code, "professor": prof.name if prof else "TBA"}

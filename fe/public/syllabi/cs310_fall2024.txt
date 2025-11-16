@@ -1,0 +1,43 @@
+CS-310: Database Systems - Fall 2024
+SDSU Computer Science Department
+
+Instructor: Dr. Emily Rodriguez
+Email: erodriguez@sdsu.edu
+Office Hours: MWF 11:00 AM-12:00 PM
+
+Course Description:
+Introduction to database design, implementation, and management. Topics include relational model, SQL, normalization, transactions, and NoSQL databases.
+
+Learning Objectives:
+- Design relational databases using ER diagrams
+- Write complex SQL queries
+- Understand normalization and database optimization
+- Work with both SQL and NoSQL databases
+
+Grading:
+- Database Project (40%)
+- Midterm Exam (25%)
+- Final Exam (25%)
+- Homework Assignments (10%)
+
+Required Materials:
+- Database System Concepts (7th Edition)
+- MySQL Workbench
+- MongoDB (free tier)
+
+Schedule:
+Week 1-2: Introduction to Databases & ER Modeling
+Week 3-4: Relational Model & SQL Basics
+Week 5-6: Advanced SQL & Joins
+Week 7: Midterm Exam
+Week 8-9: Normalization & Database Design
+Week 10-11: Transactions & Concurrency
+Week 12-13: NoSQL Databases
+Week 14: Database Security & Performance
+Week 15: Project Presentations
+Week 16: Final Exam
+
+Policies:
+- Group project (2-3 students)
+- Weekly homework assignments
+- Attendance strongly recommended

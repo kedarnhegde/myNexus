@@ -40,3 +40,7 @@ update-posts:
 # Seed database with sample data
 seed:
 	cd be && source .venv/bin/activate && python seed.py
+
+# Seed CourseCompass data
+seed-courses:
+	cd be && source .venv/bin/activate && python seed_courses.py

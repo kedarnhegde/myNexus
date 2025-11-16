@@ -11,7 +11,12 @@ export default function Home() {
   const [posts, setPosts] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState('home');
+  const [activeSection, setActiveSection] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('activeSection') || 'home';
+    }
+    return 'home';
+  });
   const [connections, setConnections] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -39,6 +44,24 @@ export default function Home() {
   const [userTags, setUserTags] = useState<any[]>([]);
   const [allTags, setAllTags] = useState<any[]>([]);
   const [showTagSelector, setShowTagSelector] = useState(false);
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [courseSearchQuery, setCourseSearchQuery] = useState('');
+  const [selectedDept, setSelectedDept] = useState('');
+  const [courses, setCourses] = useState([]);
+  const [courseProfessors, setCourseProfessors] = useState([]);
+  const [popularProfs, setPopularProfs] = useState([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [courseTab, setCourseTab] = useState<'courses' | 'professors'>('courses');
+  const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  const [selectedProfessor, setSelectedProfessor] = useState<any>(null);
+  const [courseSections, setCourseSections] = useState<any[]>([]);
+  const [selectedSection, setSelectedSection] = useState<any>(null);
+  const [sectionReviews, setSectionReviews] = useState<any[]>([]);
+  const [sectionQuestions, setSectionQuestions] = useState<any[]>([]);
+  const [reviewTab, setReviewTab] = useState<'reviews' | 'qa'>('reviews');
+  const [showSyllabus, setShowSyllabus] = useState(false);
+  const [syllabusContent, setSyllabusContent] = useState('');
+  const [profCourses, setProfCourses] = useState<any[]>([]);
   
   const getButtonText = (eventName: string, defaultAction: string) => {
     return registeredEvents[eventName] ? `${registeredEvents[eventName]}ed` : defaultAction;
@@ -161,6 +184,67 @@ export default function Home() {
     
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (activeSection === 'courses') {
+      fetchDepartments();
+      fetchPopularProfessors();
+      searchCourses();
+    }
+  }, [activeSection]);
+
+  useEffect(() => {
+    if (activeSection === 'courses') {
+      if (courseTab === 'courses') searchCourses();
+      else searchCourseProfessors();
+    }
+  }, [courseSearchQuery, selectedDept, courseTab]);
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/departments');
+      const data = await res.json();
+      setDepartments(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setDepartments([]);
+    }
+  };
+
+  const fetchPopularProfessors = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/professors/popular');
+      const data = await res.json();
+      setPopularProfs(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setPopularProfs([]);
+    }
+  };
+
+  const searchCourses = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (courseSearchQuery) params.append('query', courseSearchQuery);
+      if (selectedDept) params.append('department', selectedDept);
+      const res = await fetch(`http://localhost:8000/courses/search?${params}`);
+      const data = await res.json();
+      setCourses(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setCourses([]);
+    }
+  };
+
+  const searchCourseProfessors = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (courseSearchQuery) params.append('query', courseSearchQuery);
+      if (selectedDept) params.append('department', selectedDept);
+      const res = await fetch(`http://localhost:8000/professors/search?${params}`);
+      const data = await res.json();
+      setCourseProfessors(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setCourseProfessors([]);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -417,42 +501,42 @@ export default function Home() {
       <div className="w-64 bg-gray-900 border-r border-gray-800 p-6">
         <h2 className="text-2xl font-bold mb-8" style={{color: '#A6192E'}}>myNexus</h2>
         <nav className="space-y-4">
-          <button onClick={() => setActiveSection('home')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'home' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+          <button onClick={() => { setActiveSection('home'); localStorage.setItem('activeSection', 'home'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'home' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
             <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
               <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
             </svg>
-            <span className="font-medium text-white">Home</span>
+            <span className="font-medium text-white">AskSDSU</span>
           </button>
           
-          <button onClick={() => setActiveSection('peer')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'peer' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
-            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-            </svg>
-            <span className="font-medium text-white">Peer Connect</span>
-          </button>
-          
-          <button onClick={() => setActiveSection('events')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'events' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
-            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-            </svg>
-            <span className="font-medium text-white">Events</span>
-          </button>
-          
-          <button onClick={() => setActiveSection('clubs')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'clubs' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
-            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
-              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-            </svg>
-            <span className="font-medium text-white">Clubs</span>
-          </button>
-          
-          <button onClick={() => setActiveSection('courses')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'courses' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+          <button onClick={() => { setActiveSection('courses'); localStorage.setItem('activeSection', 'courses'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'courses' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
             <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
               <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
             </svg>
             <span className="font-medium text-white">Course Compass</span>
           </button>
           
-          <button onClick={() => setActiveSection('messages')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'messages' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+          <button onClick={() => { setActiveSection('peer'); localStorage.setItem('activeSection', 'peer'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'peer' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+            </svg>
+            <span className="font-medium text-white">Peer Connect</span>
+          </button>
+          
+          <button onClick={() => { setActiveSection('events'); localStorage.setItem('activeSection', 'events'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'events' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+            </svg>
+            <span className="font-medium text-white">Events</span>
+          </button>
+          
+          <button onClick={() => { setActiveSection('clubs'); localStorage.setItem('activeSection', 'clubs'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'clubs' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+            <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
+              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+            </svg>
+            <span className="font-medium text-white">Clubs</span>
+          </button>
+          
+          <button onClick={() => { setActiveSection('messages'); localStorage.setItem('activeSection', 'messages'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'messages' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
             <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
               <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
               <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
@@ -460,7 +544,7 @@ export default function Home() {
             <span className="font-medium text-white">Messages</span>
           </button>
           
-          <button onClick={() => setActiveSection('profile')} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'profile' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
+          <button onClick={() => { setActiveSection('profile'); localStorage.setItem('activeSection', 'profile'); }} className="w-full flex items-center gap-3 p-3 rounded-lg text-left" style={{backgroundColor: activeSection === 'profile' ? 'rgba(166, 25, 46, 0.2)' : 'transparent'}}>
             <svg className="w-6 h-6" style={{color: '#A6192E'}} fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
             </svg>
@@ -479,7 +563,7 @@ export default function Home() {
 
       <div className="flex-1 p-6 overflow-y-auto">
         <h2 className="text-2xl font-bold mb-6 text-white">
-          {activeSection === 'home' ? 'Home' : activeSection === 'peer' ? 'Peer Connect' : activeSection === 'events' ? 'Events' : activeSection === 'clubs' ? 'Clubs' : activeSection === 'courses' ? 'Course Compass' : activeSection === 'messages' ? 'Messages' : 'Profile'}
+          {activeSection === 'home' ? 'AskSDSU' : activeSection === 'peer' ? 'Peer Connect' : activeSection === 'events' ? 'Events' : activeSection === 'clubs' ? 'Clubs' : activeSection === 'courses' ? 'Course Compass' : activeSection === 'messages' ? 'Messages' : 'Profile'}
         </h2>
         
         {activeSection === 'home' && (
@@ -850,8 +934,196 @@ export default function Home() {
         )}
         
         {activeSection === 'courses' && (
-          <div className="text-center py-12">
-            <p className="text-gray-400">Course Compass coming soon...</p>
+          <div>
+            {selectedCourse ? (
+              <div>
+                <button onClick={() => { setSelectedCourse(null); setSelectedSection(null); }} className="text-gray-400 hover:text-white mb-4">← Back to Courses</button>
+                <div className="bg-gray-900 rounded-lg p-5 border border-gray-800 mb-4">
+                  <h2 className="text-2xl font-bold text-white">{selectedCourse.code}</h2>
+                  <p className="text-lg text-gray-300 mt-1">{selectedCourse.title}</p>
+                  <p className="text-gray-400 mt-2">{selectedCourse.description}</p>
+                </div>
+                <div className="bg-gray-900 rounded-lg p-5 border border-gray-800 mb-4">
+                  <h3 className="font-bold text-lg mb-3 text-white">Select Section</h3>
+                  <div className="space-y-2">
+                    {courseSections.map((section: any) => (
+                      <div key={section.section_id} onClick={async () => {
+                        setSelectedSection(section);
+                        try {
+                          const revRes = await fetch(`http://localhost:8000/sections/${section.section_id}/reviews`);
+                          const revData = await revRes.json();
+                          setSectionReviews(Array.isArray(revData) ? revData : []);
+                          const qRes = await fetch(`http://localhost:8000/sections/${section.section_id}/questions`);
+                          const qData = await qRes.json();
+                          setSectionQuestions(Array.isArray(qData) ? qData : []);
+                        } catch (err) {
+                          console.error(err);
+                          setSectionReviews([]);
+                          setSectionQuestions([]);
+                        }
+                      }} className={`p-4 border rounded-lg cursor-pointer ${selectedSection?.section_id === section.section_id ? 'bg-gray-800' : 'hover:bg-gray-800'}`} style={selectedSection?.section_id === section.section_id ? {borderColor: '#A6192E'} : {borderColor: '#374151'}}>
+                        <div className="flex justify-between">
+                          <div>
+                            <div className="font-semibold text-white">Section {section.section_number} - {section.professor_name}</div>
+                            <div className="text-sm text-gray-400">{section.schedule} • {section.location}</div>
+                            {section.tags && <div className="flex gap-2 mt-2">{section.tags.split(',').map((tag: string, i: number) => {
+                              const colors = ['bg-blue-900 text-blue-300', 'bg-orange-900 text-orange-300', 'bg-pink-900 text-pink-300', 'bg-teal-900 text-teal-300', 'bg-yellow-900 text-yellow-300', 'bg-indigo-900 text-indigo-300'];
+                              return <span key={i} className={`text-xs px-2 py-1 rounded ${colors[i % colors.length]}`}>{tag}</span>;
+                            })}</div>}
+                            <button onClick={async (e) => { e.stopPropagation(); const res = await fetch(`http://localhost:8000/syllabus/${section.section_id}`); const data = await res.json(); setSyllabusContent(data.content); setShowSyllabus(true); }} className="text-sm mt-2" style={{color: '#A6192E'}}>📄 View Syllabus</button>
+                          </div>
+                          <div className="text-2xl font-bold text-white">{section.professor_rating.toFixed(1)}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {selectedSection && (
+                  <div key={selectedSection.section_id} className="bg-gray-900 rounded-lg border border-gray-800">
+                    <div className="flex gap-4 border-b border-gray-800 px-5 pt-3">
+                      <button onClick={() => setReviewTab('reviews')} className={`pb-3 px-2 font-medium ${reviewTab === 'reviews' ? 'border-b-2 text-white' : 'text-gray-500'}`} style={reviewTab === 'reviews' ? {borderColor: '#A6192E'} : {}}>Reviews ({sectionReviews.length})</button>
+                      <button onClick={() => setReviewTab('qa')} className={`pb-3 px-2 font-medium ${reviewTab === 'qa' ? 'border-b-2 text-white' : 'text-gray-500'}`} style={reviewTab === 'qa' ? {borderColor: '#A6192E'} : {}}>Q&A ({sectionQuestions.length})</button>
+                    </div>
+                    <div className="p-5 space-y-4">
+                      {reviewTab === 'reviews' ? (
+                        sectionReviews.length > 0 ? sectionReviews.map((r: any) => (
+                          <div key={r.id} className="border-b border-gray-800 pb-4">
+                            <div className="flex justify-between mb-2">
+                              <span className="font-medium text-white">{r.username}</span>
+                              <span className="text-lg font-bold" style={{color: '#A6192E'}}>{r.rating.toFixed(1)}/5.0</span>
+                            </div>
+                            <p className="text-gray-300">{r.content}</p>
+                            {r.tags && <div className="flex gap-2 mt-2">{r.tags.split(',').map((tag: string, i: number) => {
+                              const colors = ['bg-blue-900 text-blue-300', 'bg-green-900 text-green-300', 'bg-purple-900 text-purple-300', 'bg-orange-900 text-orange-300', 'bg-pink-900 text-pink-300', 'bg-teal-900 text-teal-300'];
+                              return <span key={i} className={`text-xs px-2 py-1 rounded ${colors[i % colors.length]}`}>{tag}</span>;
+                            })}</div>}
+                          </div>
+                        )) : <div className="text-center text-gray-400 py-8">No reviews yet for this section</div>
+                      ) : (
+                        sectionQuestions.length > 0 ? sectionQuestions.map((q: any) => (
+                          <div key={q.id} className="border border-gray-800 rounded-lg p-4">
+                            <h4 className="font-semibold text-white">{q.title}</h4>
+                            <p className="text-sm text-gray-400 mt-2">{q.content}</p>
+                            <div className="text-xs text-gray-500 mt-2">↑ {q.upvotes} • {q.answer_count} answers</div>
+                          </div>
+                        )) : <div className="text-center text-gray-400 py-8">No questions yet for this section</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : selectedProfessor ? (
+              <div>
+                <button onClick={() => { setSelectedProfessor(null); setProfCourses([]); }} className="text-gray-400 hover:text-white mb-4">← Back to Professors</button>
+                <div className="bg-gray-900 rounded-lg p-5 border border-gray-800 mb-4">
+                  <div className="flex justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">{selectedProfessor.name}</h2>
+                      <p className="text-gray-400">{selectedProfessor.department}</p>
+                    </div>
+                    {selectedProfessor.total_reviews > 0 && <div className="text-right"><div className="text-4xl font-bold" style={{color: '#A6192E'}}>{selectedProfessor.avg_rating.toFixed(1)}</div><div className="text-sm text-gray-400">{selectedProfessor.total_reviews} reviews</div></div>}
+                  </div>
+                  {selectedProfessor.total_reviews > 0 && (
+                    <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
+                      <div><span className="text-gray-400">Difficulty: </span><span className="font-bold text-white">{selectedProfessor.avg_difficulty.toFixed(1)}/5.0</span></div>
+                      <div><span className="text-gray-400">Take Again: </span><span className="font-bold" style={{color: '#A6192E'}}>{selectedProfessor.would_take_again_percent.toFixed(0)}%</span></div>
+                    </div>
+                  )}
+                </div>
+                <div className="bg-gray-900 rounded-lg p-5 border border-gray-800">
+                  <h3 className="font-bold text-lg mb-3 text-white">Courses Taught</h3>
+                  <div className="space-y-3">
+                    {profCourses.map((c: any) => (
+                      <div key={c.section_id} onClick={async () => {
+                        const res = await fetch(`http://localhost:8000/courses/${c.course_id}`);
+                        const data = await res.json();
+                        setSelectedCourse(data.course);
+                        setCourseSections(data.sections);
+                        setSelectedProfessor(null);
+                      }} className="border border-gray-800 rounded-lg p-4 hover:bg-gray-800 cursor-pointer">
+                        <h4 className="font-semibold text-white">{c.course_code} - {c.course_title}</h4>
+                        <div className="text-sm text-gray-400">Section {c.section_number} • {c.semester}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-3 mb-4">
+                  <input type="text" placeholder={courseTab === 'courses' ? 'Search courses (e.g., CS-160)' : 'Search professors'} value={courseSearchQuery} onChange={(e) => setCourseSearchQuery(e.target.value)} className="flex-1 px-4 py-3 bg-gray-900 text-white border border-gray-700 rounded-lg focus:outline-none" />
+                  <select value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)} className="px-4 py-3 bg-gray-900 text-white border border-gray-700 rounded-lg focus:outline-none">
+                    <option value="">All Departments</option>
+                    {departments.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+                  </select>
+                </div>
+                <div className="flex gap-4 border-b border-gray-800 mb-4">
+                  <button onClick={() => setCourseTab('courses')} className={`pb-3 px-2 font-medium ${courseTab === 'courses' ? 'border-b-2 text-white' : 'text-gray-500'}`} style={courseTab === 'courses' ? {borderColor: '#A6192E'} : {}}>Courses</button>
+                  <button onClick={() => setCourseTab('professors')} className={`pb-3 px-2 font-medium ${courseTab === 'professors' ? 'border-b-2 text-white' : 'text-gray-500'}`} style={courseTab === 'professors' ? {borderColor: '#A6192E'} : {}}>Professors</button>
+                </div>
+                {courseTab === 'courses' ? (
+              <div className="space-y-3">
+                {courses.length === 0 ? <div className="bg-gray-900 rounded-lg p-8 text-center text-gray-400">Loading courses...</div> : courses.map((course: any) => (
+                  <div key={course.id} onClick={async () => {
+                    setSelectedCourse(course);
+                    setSelectedProfessor(null);
+                    const res = await fetch(`http://localhost:8000/courses/${course.id}`);
+                    const data = await res.json();
+                    setCourseSections(data.sections);
+                    if (data.sections.length > 0) {
+                      setSelectedSection(data.sections[0]);
+                      const revRes = await fetch(`http://localhost:8000/sections/${data.sections[0].section_id}/reviews`);
+                      setSectionReviews(await revRes.json());
+                      const qRes = await fetch(`http://localhost:8000/sections/${data.sections[0].section_id}/questions`);
+                      setSectionQuestions(await qRes.json());
+                    }
+                  }} className="bg-gray-900 rounded-lg p-5 hover:bg-gray-800 transition cursor-pointer border border-gray-800">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg text-white">{course.code}</h3>
+                        <p className="text-gray-300 mt-1">{course.title}</p>
+                        <p className="text-sm text-gray-400 mt-2">{course.description}</p>
+                        {course.tags && <div className="flex gap-2 flex-wrap mt-3">{course.tags.split(',').map((tag: string, i: number) => {
+                          const colors = ['bg-blue-900 text-blue-300', 'bg-green-900 text-green-300', 'bg-purple-900 text-purple-300', 'bg-orange-900 text-orange-300', 'bg-pink-900 text-pink-300', 'bg-teal-900 text-teal-300'];
+                          return <span key={i} className={`text-xs px-2 py-1 rounded ${colors[i % colors.length]}`}>{tag}</span>;
+                        })}</div>}
+                      </div>
+                      <span className="text-xs px-3 py-1 rounded-full ml-4" style={{backgroundColor: 'rgba(166, 25, 46, 0.2)', color: '#A6192E'}}>{course.department}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {courseProfessors.length === 0 ? <div className="bg-gray-900 rounded-lg p-8 text-center text-gray-400">No professors found.</div> : courseProfessors.map((prof: any) => (
+                  <div key={prof.id} onClick={async () => {
+                    setSelectedProfessor(prof);
+                    setSelectedCourse(null);
+                    const res = await fetch(`http://localhost:8000/professors/${prof.id}`);
+                    const data = await res.json();
+                    setProfCourses(Array.isArray(data.courses) ? data.courses : []);
+                  }} className="bg-gray-900 rounded-lg p-5 hover:bg-gray-800 transition cursor-pointer border border-gray-800">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold text-lg text-white">{prof.name}</h3>
+                        <p className="text-sm text-gray-400 mt-1">{prof.department}</p>
+                        {prof.total_reviews > 0 && <div className="flex gap-4 mt-3 text-sm">
+                          <div><span className="text-gray-500">Rating: </span><span className="font-semibold" style={{color: '#A6192E'}}>{prof.avg_rating.toFixed(1)}/5.0</span></div>
+                          <div><span className="text-gray-500">Difficulty: </span><span className="font-semibold text-white">{prof.avg_difficulty.toFixed(1)}/5.0</span></div>
+                          <div><span className="text-gray-500">Would take again: </span><span className="font-semibold" style={{color: '#A6192E'}}>{prof.would_take_again_percent.toFixed(0)}%</span></div>
+                        </div>}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-white">{prof.avg_rating.toFixed(1)}</div>
+                        <div className="text-xs text-gray-400">{prof.total_reviews} reviews</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+                )}
+              </>
+            )}
           </div>
         )}
         
@@ -1064,10 +1336,44 @@ export default function Home() {
       </div>
 
       <div className="w-80 bg-gray-900 border-l border-gray-800 p-6">
-        <h2 className="text-xl font-bold mb-6 text-white">Trending</h2>
+        <h2 className="text-xl font-bold mb-6 text-white">{activeSection === 'courses' ? 'Course Info' : 'Trending'}</h2>
         <div className="space-y-6">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-400 mb-3">Topics</h3>
+          {activeSection === 'courses' ? (
+            <>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-400 mb-3">🔥 Popular Professors</h3>
+                <div className="space-y-3">
+                  {popularProfs.length > 0 ? popularProfs.slice(0, 5).map((prof: any) => (
+                    <div key={prof.id} onClick={async () => {
+                      setSelectedProfessor(prof);
+                      const res = await fetch(`http://localhost:8000/professors/${prof.id}`);
+                      const data = await res.json();
+                      setProfCourses(Array.isArray(data.courses) ? data.courses : []);
+                    }} className="cursor-pointer hover:bg-gray-800 p-2 rounded">
+                      <div className="font-medium text-sm text-white">{prof.name}</div>
+                      <div className="text-xs text-gray-400">{prof.department}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs font-semibold" style={{color: '#A6192E'}}>{prof.avg_rating.toFixed(1)}</span>
+                        <span className="text-xs text-gray-600">•</span>
+                        <span className="text-xs text-gray-400">{prof.total_reviews} reviews</span>
+                      </div>
+                    </div>
+                  )) : <p className="text-sm text-gray-400">No professors yet</p>}
+                </div>
+              </div>
+              <div className="rounded-lg p-5 border" style={{backgroundColor: 'rgba(166, 25, 46, 0.1)', borderColor: 'rgba(166, 25, 46, 0.3)'}}>
+                <h3 className="font-bold text-white mb-2">💡 Tips</h3>
+                <ul className="text-sm text-gray-300 space-y-2">
+                  <li>• Read multiple reviews</li>
+                  <li>• Check syllabus</li>
+                  <li>• Compare sections</li>
+                </ul>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-400 mb-3">Topics</h3>
             <div className="space-y-2">
               <div className="p-3 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer">
                 <p className="text-white font-medium">#SDSULife</p>
@@ -1111,6 +1417,8 @@ export default function Home() {
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
       </div>
       
@@ -1142,17 +1450,79 @@ export default function Home() {
                   <h3 className="text-lg font-semibold text-white mb-3">About</h3>
                   <p className="text-gray-300 mb-4">{selectedUser.bio || 'No bio available'}</p>
                   
-                  <h3 className="text-lg font-semibold text-white mb-3">Availability</h3>
-                  <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                    <div className="grid grid-cols-7 gap-2 text-center">
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                        <div key={day} className="text-xs text-gray-400">{day}</div>
-                      ))}
-                      {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28].map(d => (
-                        <div key={d} className={`text-xs py-2 rounded ${[5,12,19,26].includes(d) ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}>{d}</div>
-                      ))}
+                  {selectedUser.courses && selectedUser.courses.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-gray-400 mb-2">📚 Courses</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedUser.courses.map((course: string, i: number) => (
+                          <span key={i} className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded">
+                            {course}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-3">Green = Available for sessions</p>
+                  )}
+                  
+                  {selectedUser.clubs && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-gray-400 mb-2">🎯 Clubs</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedUser.clubs.split(',').map((club: string, i: number) => (
+                          <span key={i} className="text-xs bg-purple-900 text-purple-300 px-2 py-1 rounded">
+                            {club}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <h3 className="text-lg font-semibold text-white mb-3">Availability</h3>
+                  <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-4 mb-4 border border-gray-700">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h4 className="text-white font-medium">{calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h4>
+                      <div className="flex gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1)); }} className="text-gray-400 hover:text-white transition">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1)); }} className="text-gray-400 hover:text-white transition">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1 text-center">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} className="text-xs font-semibold py-2" style={{color: '#A6192E'}}>{day}</div>
+                      ))}
+                      {(() => {
+                        const year = calendarDate.getFullYear();
+                        const month = calendarDate.getMonth();
+                        const firstDay = new Date(year, month, 1).getDay();
+                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                        const days = [];
+                        for (let i = 0; i < firstDay; i++) days.push(<div key={`empty-${i}`} className="py-3"></div>);
+                        for (let d = 1; d <= daysInMonth; d++) {
+                          const isAvailable = [5,12,19,26].includes(d);
+                          days.push(
+                            <div key={d} className={`text-sm py-3 rounded-lg font-medium transition-all cursor-pointer ${
+                              isAvailable
+                                ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg hover:shadow-xl hover:scale-105' 
+                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}>{d}</div>
+                          );
+                        }
+                        return days;
+                      })()}
+                    </div>
+                    <div className="mt-4 flex items-center gap-4 text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-gradient-to-br from-green-500 to-green-600"></div>
+                        <span className="text-gray-300">Available</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-gray-700"></div>
+                        <span className="text-gray-300">Unavailable</span>
+                      </div>
+                    </div>
                   </div>
 
                   <button onClick={(e) => { e.stopPropagation(); handleSendRequest(selectedUser.id); setSelectedUser(null); }} className="w-full py-3 text-white rounded-lg font-medium" style={{backgroundColor: '#A6192E'}}>Connect</button>
@@ -1223,6 +1593,24 @@ export default function Home() {
               >
                 Confirm
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSyllabus && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={() => setShowSyllabus(false)}>
+          <div className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold text-white">Course Syllabus</h2>
+                <button onClick={() => setShowSyllabus(false)} className="text-gray-400 hover:text-white">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+              <pre className="text-gray-300 whitespace-pre-wrap font-mono text-sm">{syllabusContent}</pre>
             </div>
           </div>
         </div>

@@ -1,0 +1,41 @@
+CS-160: Introduction to Programming - Fall 2024
+SDSU Computer Science Department
+
+Instructor: Dr. Sarah Johnson
+Email: sjohnson@sdsu.edu
+Office Hours: MW 2:00-4:00 PM
+
+Course Description:
+This course introduces fundamental programming concepts using Python. Topics include variables, data types, control structures, functions, and basic data structures.
+
+Learning Objectives:
+- Understand basic programming concepts
+- Write, test, and debug Python programs
+- Apply problem-solving techniques
+- Work with data structures
+
+Grading:
+- Assignments (40%)
+- Midterm Exam (25%)
+- Final Exam (25%)
+- Participation (10%)
+
+Required Materials:
+- Python Programming: An Introduction to Computer Science (3rd Edition)
+- Python 3.x installed on your computer
+
+Schedule:
+Week 1-2: Python Basics
+Week 3-4: Control Structures
+Week 5-6: Functions
+Week 7: Midterm Exam
+Week 8-10: Lists and Dictionaries
+Week 11-12: File I/O
+Week 13-14: Object-Oriented Programming Basics
+Week 15: Review
+Week 16: Final Exam
+
+Policies:
+- Attendance is mandatory
+- Late assignments accepted with 10% penalty per day
+- Academic integrity strictly enforced
