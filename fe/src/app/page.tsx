@@ -88,6 +88,30 @@ export default function Home() {
   const [showSyllabus, setShowSyllabus] = useState(false);
   const [syllabusContent, setSyllabusContent] = useState("");
   const [profCourses, setProfCourses] = useState<any[]>([]);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    }
+  }, [isDark]);
+
+  const t = {
+    bg: isDark ? 'bg-black' : 'bg-white',
+    text: isDark ? 'text-white' : 'text-gray-900',
+    textSec: isDark ? 'text-gray-400' : 'text-gray-600',
+    border: isDark ? 'border-gray-800' : 'border-gray-200',
+    card: isDark ? 'bg-gray-900' : 'bg-white',
+    input: isDark ? 'bg-gray-700' : 'bg-gray-50',
+    hover: isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-50',
+    sidebar: isDark ? 'bg-gray-900' : 'bg-white',
+    logo: isDark ? '/logo_dark.png' : '/logo.png'
+  };
 
   const getButtonText = (eventName: string, defaultAction: string) => {
     return registeredEvents[eventName]
@@ -159,8 +183,19 @@ export default function Home() {
       "Open Source": "bg-emerald-600",
       Startups: "bg-orange-700",
       Internship: "bg-blue-800",
+      "beginner-friendly": "bg-green-600",
+      "coding-intensive": "bg-blue-600",
+      "project-based": "bg-purple-600",
+      "theory-heavy": "bg-indigo-600",
+      "math-intensive": "bg-red-600",
+      "group-work": "bg-teal-600",
     };
-    return colors[tag] || "bg-gray-600";
+    const colorArray = [
+      "bg-blue-600", "bg-green-600", "bg-purple-600", "bg-orange-600",
+      "bg-pink-600", "bg-indigo-600", "bg-teal-600", "bg-cyan-600",
+      "bg-red-600", "bg-yellow-600", "bg-violet-600", "bg-fuchsia-600"
+    ];
+    return colors[tag] || colorArray[tag.length % colorArray.length];
   };
 
   useEffect(() => {
@@ -873,10 +908,13 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex">
-      <div className="w-64 bg-gray-900 border-r border-gray-800 p-6">
-        <div className="mb-8 flex items-center justify-center">
-          <img src="/logo_dark.png" alt="myNexus" className="h-10 w-auto" />
+    <div className={`min-h-screen ${t.bg} flex`}>
+      <div className={`w-64 ${t.sidebar} border-r ${t.border} p-6`}>
+        <div className="mb-8 flex items-center justify-between">
+          <img src={t.logo} alt="myNexus" className="h-10 w-auto" />
+          <button onClick={() => setIsDark(!isDark)} className={`p-2 rounded-lg ${t.hover}`}>
+            {isDark ? <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" /></svg> : <svg className="w-5 h-5" style={{color:'#A6192E'}} fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" /></svg>}
+          </button>
         </div>
         <nav className="space-y-4">
           <button
@@ -900,7 +938,7 @@ export default function Home() {
             >
               <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
             </svg>
-            <span className="font-medium text-white">AskSDSU</span>
+            <span className={`font-medium ${t.text}`}>AskSDSU</span>
           </button>
 
           <button
@@ -924,7 +962,7 @@ export default function Home() {
             >
               <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
             </svg>
-            <span className="font-medium text-white">Course Compass</span>
+            <span className={`font-medium ${t.text}`}>Course Compass</span>
           </button>
 
           <button
@@ -948,7 +986,7 @@ export default function Home() {
             >
               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
             </svg>
-            <span className="font-medium text-white">Peer Connect</span>
+            <span className={`font-medium ${t.text}`}>Peer Connect</span>
           </button>
 
           <button
@@ -976,7 +1014,7 @@ export default function Home() {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="font-medium text-white">Events</span>
+            <span className={`font-medium ${t.text}`}>Events</span>
           </button>
 
           <button
@@ -1000,7 +1038,7 @@ export default function Home() {
             >
               <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
             </svg>
-            <span className="font-medium text-white">Clubs</span>
+            <span className={`font-medium ${t.text}`}>Clubs</span>
           </button>
 
           <button
@@ -1025,7 +1063,7 @@ export default function Home() {
               <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
               <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
             </svg>
-            <span className="font-medium text-white">Messages</span>
+            <span className={`font-medium ${t.text}`}>Messages</span>
           </button>
 
           <button
@@ -1053,12 +1091,12 @@ export default function Home() {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="font-medium text-white">Profile</span>
+            <span className={`font-medium ${t.text}`}>Profile</span>
           </button>
 
-          <div className="pt-6 border-t border-gray-800">
-            <p className="text-sm text-gray-400 mb-2">Logged in as</p>
-            <p className="font-medium text-white">{user.username}</p>
+          <div className={`pt-6 border-t ${t.border}`}>
+            <p className={`text-sm ${t.textSec} mb-2`}>Logged in as</p>
+            <p className={`font-medium ${t.text}`}>{user.username}</p>
             <button
               onClick={handleLogout}
               className="mt-4 w-full text-white py-2 rounded-lg text-sm font-medium"
@@ -1071,7 +1109,7 @@ export default function Home() {
       </div>
 
       <div className="flex-1 p-6 overflow-y-auto">
-        <h2 className="text-2xl font-bold mb-6 text-white">
+        <h2 className={`text-2xl font-bold mb-6 ${t.text}`}>
           {activeSection === "home"
             ? "AskSDSU"
             : activeSection === "peer"
@@ -1089,10 +1127,10 @@ export default function Home() {
 
         {activeSection === "home" && (
           <div className="space-y-4">
-            <div className="bg-gray-900 rounded-lg p-6">
+            <div className={`${t.card} rounded-lg p-6 border ${t.border}`}>
               <textarea
                 placeholder="What's on your mind?"
-                className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none mb-3"
+                className={`w-full px-4 py-3 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none mb-3`}
                 rows={3}
                 value={newPost}
                 onChange={(e) => setNewPost(e.target.value)}
@@ -1101,7 +1139,7 @@ export default function Home() {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none"
+                  className={`px-4 py-2 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none`}
                 >
                   {categories.map((cat) => (
                     <option key={cat.value} value={cat.value}>
@@ -1123,7 +1161,7 @@ export default function Home() {
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="px-4 py-2 bg-gray-900 text-white rounded-lg border border-gray-700 focus:outline-none"
+                className={`px-4 py-2 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none`}
               >
                 <option value="all">All Posts</option>
                 {categories.map((cat) => (
@@ -1135,7 +1173,7 @@ export default function Home() {
             </div>
 
             {posts.map((post) => (
-              <div key={post.id} className="bg-gray-900 rounded-lg shadow p-6">
+              <div key={post.id} className={`${t.card} rounded-lg shadow p-6 border ${t.border}`}>
                 <div className="flex items-center gap-3 mb-4">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
@@ -1144,8 +1182,8 @@ export default function Home() {
                     {post.username[0].toUpperCase()}
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-white">{post.username}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className={`font-semibold ${t.text}`}>{post.username}</p>
+                    <p className={`text-sm ${t.textSec}`}>
                       {new Date(post.created_at).toLocaleDateString()}
                     </p>
                   </div>
@@ -1160,7 +1198,7 @@ export default function Home() {
                       post.category}
                   </span>
                 </div>
-                <p className="mb-4 text-gray-300">{post.content}</p>
+                <p className={`mb-4 ${t.text}`}>{post.content}</p>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <button
@@ -1182,7 +1220,7 @@ export default function Home() {
                         />
                       </svg>
                     </button>
-                    <span className="text-white font-medium">
+                    <span className={`${t.text} font-medium`}>
                       {post.likes_count}
                     </span>
                     <button
@@ -1226,12 +1264,12 @@ export default function Home() {
                   </button>
                 </div>
                 {showComments[post.id] && (
-                  <div className="mt-4 pt-4 border-t border-gray-800">
+                  <div className={`mt-4 pt-4 border-t ${t.border}`}>
                     <div className="flex gap-2 mb-4">
                       <input
                         type="text"
                         placeholder="Write a comment..."
-                        className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none text-sm"
+                        className={`flex-1 px-4 py-2 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none text-sm`}
                         value={newComment[post.id] || ""}
                         onChange={(e) =>
                           setNewComment({
@@ -1260,18 +1298,18 @@ export default function Home() {
                           >
                             {comment.username[0].toUpperCase()}
                           </div>
-                          <div className="flex-1 bg-gray-800 rounded-lg p-3">
+                          <div className={`flex-1 ${t.input} rounded-lg p-3`}>
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-white text-sm font-medium">
+                              <span className={`${t.text} text-sm font-medium`}>
                                 {comment.username}
                               </span>
-                              <span className="text-gray-500 text-xs">
+                              <span className={`${t.textSec} text-xs`}>
                                 {new Date(
                                   comment.created_at
                                 ).toLocaleDateString()}
                               </span>
                             </div>
-                            <p className="text-gray-300 text-sm">
+                            <p className={`${t.text} text-sm`}>
                               {comment.content}
                             </p>
                           </div>
@@ -1292,7 +1330,7 @@ export default function Home() {
                 <input
                   type="text"
                   placeholder="Search users..."
-                  className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg border border-gray-700 focus:outline-none"
+                  className={`flex-1 px-4 py-2 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleSearch()}
@@ -1310,7 +1348,7 @@ export default function Home() {
                 <select
                   value={yearFilter}
                   onChange={(e) => setYearFilter(e.target.value)}
-                  className="px-4 py-2 bg-gray-900 text-white rounded-lg border border-gray-700 focus:outline-none"
+                  className={`px-4 py-2 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none`}
                 >
                   <option value="">All Years</option>
                   <option value="Freshman">Freshman</option>
@@ -1325,7 +1363,7 @@ export default function Home() {
                 <select
                   value={majorFilter}
                   onChange={(e) => setMajorFilter(e.target.value)}
-                  className="px-4 py-2 bg-gray-900 text-white rounded-lg border border-gray-700 focus:outline-none"
+                  className={`px-4 py-2 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none`}
                 >
                   <option value="">All Majors</option>
                   <option value="CS Major">CS Major</option>
@@ -1336,7 +1374,7 @@ export default function Home() {
                 <select
                   value={companyFilter}
                   onChange={(e) => setCompanyFilter(e.target.value)}
-                  className="px-4 py-2 bg-gray-900 text-white rounded-lg border border-gray-700 focus:outline-none"
+                  className={`px-4 py-2 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none`}
                 >
                   <option value="">All Companies</option>
                   <option value="Meta">Meta</option>
@@ -1352,7 +1390,7 @@ export default function Home() {
                   {searchResults.map((result) => (
                     <div
                       key={result.id}
-                      className="bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-800 transition"
+                      className={`${t.card} rounded-lg overflow-hidden cursor-pointer ${t.hover} transition border ${t.border}`}
                       onClick={() => setSelectedUser(result)}
                     >
                       <img
@@ -1361,11 +1399,11 @@ export default function Home() {
                         className="w-full h-32 object-cover"
                       />
                       <div className="p-4">
-                        <p className="text-white font-semibold text-lg mb-3">
+                        <p className={`${t.text} font-semibold text-lg mb-3`}>
                           {result.username}
                         </p>
                         {result.bio && (
-                          <p className="text-gray-300 text-xs mb-3 line-clamp-2">
+                          <p className={`${t.textSec} text-xs mb-3 line-clamp-2`}>
                             {result.bio}
                           </p>
                         )}
@@ -1407,7 +1445,7 @@ export default function Home() {
 
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-white mb-4">
+                <h3 className={`text-lg font-semibold ${t.text} mb-4`}>
                   Pending Requests
                 </h3>
                 <div className="grid grid-cols-4 gap-4">
@@ -1416,7 +1454,7 @@ export default function Home() {
                     .map((conn) => (
                       <div
                         key={conn.id}
-                        className="bg-gray-900 rounded-lg overflow-hidden"
+                        className={`${t.card} rounded-lg overflow-hidden border ${t.border}`}
                       >
                         <img
                           src={`https://ui-avatars.com/api/?name=${conn.username}&size=300&background=random&color=fff&bold=true`}
@@ -1465,7 +1503,7 @@ export default function Home() {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-white mb-4">
+                <h3 className={`text-lg font-semibold ${t.text} mb-4`}>
                   Friends
                 </h3>
                 <div className="grid grid-cols-4 gap-4">
@@ -1474,7 +1512,7 @@ export default function Home() {
                     .map((conn) => (
                       <div
                         key={conn.id}
-                        className="bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-800 transition"
+                        className={`${t.card} rounded-lg overflow-hidden cursor-pointer ${t.hover} transition border ${t.border}`}
                         onClick={() => setSelectedUser(conn)}
                       >
                         <img
@@ -1722,14 +1760,14 @@ export default function Home() {
                 color: "rgba(168, 85, 247, 0.2)",
               },
             ].map((event, index) => (
-              <div key={index} className="bg-gray-900 rounded-lg p-6">
+              <div key={index} className={`${t.card} rounded-lg p-6 border ${t.border}`}>
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-white mb-2">
+                    <h3 className={`text-xl font-semibold ${t.text} mb-2`}>
                       {event.name}
                     </h3>
-                    <p className="text-gray-400 text-sm">📅 {event.date}</p>
-                    <p className="text-gray-400 text-sm">📍 {event.location}</p>
+                    <p className={`${t.textSec} text-sm`}>📅 {event.date}</p>
+                    <p className={`${t.textSec} text-sm`}>📍 {event.location}</p>
                   </div>
                   <span
                     className="px-3 py-1 rounded-full text-xs font-medium"
@@ -1741,7 +1779,7 @@ export default function Home() {
                     {event.tag}
                   </span>
                 </div>
-                <p className="text-gray-300 mb-4">{event.description}</p>
+                <p className={`${t.text} mb-4`}>{event.description}</p>
                 <button
                   onClick={() =>
                     !registeredEvents[event.name] &&
@@ -1795,7 +1833,7 @@ export default function Home() {
             </div>
             {clubsLoading ? (
               <div className="text-center py-12">
-                <p className="text-gray-400">Loading clubs...</p>
+                <p className={t.textSec}>Loading clubs...</p>
               </div>
             ) : (
               clubs
@@ -1803,16 +1841,16 @@ export default function Home() {
                   (club) => clubFilter === "All" || club.category === clubFilter
                 )
                 .map((club, index) => (
-                  <div key={index} className="bg-gray-900 rounded-lg p-6">
+                  <div key={index} className={`${t.card} rounded-lg p-6 border ${t.border}`}>
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-xl font-semibold text-white mb-2">
+                        <h3 className={`text-xl font-semibold ${t.text} mb-2`}>
                           {club.name}
                         </h3>
-                        <p className="text-gray-400 text-sm">
+                        <p className={`${t.textSec} text-sm`}>
                           👥 {club.members} members
                         </p>
-                        <p className="text-gray-400 text-sm">
+                        <p className={`${t.textSec} text-sm`}>
                           📍 {club.location}
                         </p>
                       </div>
@@ -1826,7 +1864,7 @@ export default function Home() {
                         {club.category}
                       </span>
                     </div>
-                    <p className="text-gray-300 mb-4">{club.description}</p>
+                    <p className={`${t.text} mb-4`}>{club.description}</p>
                     <button
                       onClick={() => handleClubConnect(club.name, club.url)}
                       className="px-4 py-2 text-white rounded-lg text-sm"
@@ -1849,23 +1887,26 @@ export default function Home() {
                     setSelectedCourse(null);
                     setSelectedSection(null);
                   }}
-                  className="text-gray-400 hover:text-white mb-4"
+                  className={`${t.textSec} mb-4`}
+                  style={{ color: isDark ? '' : '#000' }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#9CA3AF' : '#4B5563'}
                 >
                   ← Back to Courses
                 </button>
-                <div className="bg-gray-900 rounded-lg p-5 border border-gray-800 mb-4">
-                  <h2 className="text-2xl font-bold text-white">
+                <div className={`${t.card} rounded-lg p-5 border ${t.border} mb-4`}>
+                  <h2 className={`text-2xl font-bold ${t.text}`}>
                     {selectedCourse.code}
                   </h2>
-                  <p className="text-lg text-gray-300 mt-1">
+                  <p className={`text-lg ${t.text} mt-1`}>
                     {selectedCourse.title}
                   </p>
-                  <p className="text-gray-400 mt-2">
+                  <p className={`${t.textSec} mt-2`}>
                     {selectedCourse.description}
                   </p>
                 </div>
-                <div className="bg-gray-900 rounded-lg p-5 border border-gray-800 mb-4">
-                  <h3 className="font-bold text-lg mb-3 text-white">
+                <div className={`${t.card} rounded-lg p-5 border ${t.border} mb-4`}>
+                  <h3 className={`font-bold text-lg mb-3 ${t.text}`}>
                     Select Section
                   </h3>
                   <div className="space-y-2">
@@ -1895,50 +1936,38 @@ export default function Home() {
                             setSectionQuestions([]);
                           }
                         }}
-                        className={`p-4 border rounded-lg cursor-pointer ${
+                        className={`p-4 border rounded-lg cursor-pointer ${t.hover} ${
                           selectedSection?.section_id === section.section_id
-                            ? "bg-gray-800"
-                            : "hover:bg-gray-800"
+                            ? t.input
+                            : ''
                         }`}
                         style={
                           selectedSection?.section_id === section.section_id
                             ? { borderColor: "#A6192E" }
-                            : { borderColor: "#374151" }
+                            : { borderColor: isDark ? "#374151" : "#E5E7EB" }
                         }
                       >
                         <div className="flex justify-between">
                           <div>
-                            <div className="font-semibold text-white">
+                            <div className={`font-semibold ${t.text}`}>
                               Section {section.section_number} -{" "}
                               {section.professor_name}
                             </div>
-                            <div className="text-sm text-gray-400">
+                            <div className={`text-sm ${t.textSec}`}>
                               {section.schedule} • {section.location}
                             </div>
                             {section.tags && (
                               <div className="flex gap-2 mt-2">
                                 {section.tags
                                   .split(",")
-                                  .map((tag: string, i: number) => {
-                                    const colors = [
-                                      "bg-blue-900 text-blue-300",
-                                      "bg-orange-900 text-orange-300",
-                                      "bg-pink-900 text-pink-300",
-                                      "bg-teal-900 text-teal-300",
-                                      "bg-yellow-900 text-yellow-300",
-                                      "bg-indigo-900 text-indigo-300",
-                                    ];
-                                    return (
+                                  .map((tag: string, i: number) => (
                                       <span
                                         key={i}
-                                        className={`text-xs px-2 py-1 rounded ${
-                                          colors[i % colors.length]
-                                        }`}
+                                        className={`text-xs px-2 py-1 rounded text-white ${getTagColor(tag.trim())}`}
                                       >
                                         {tag}
                                       </span>
-                                    );
-                                  })}
+                                    ))}
                               </div>
                             )}
                             <button
@@ -1957,7 +1986,7 @@ export default function Home() {
                               📄 View Syllabus
                             </button>
                           </div>
-                          <div className="text-2xl font-bold text-white">
+                          <div className={`text-2xl font-bold ${t.text}`}>
                             {section.professor_rating.toFixed(1)}
                           </div>
                         </div>
@@ -1968,15 +1997,15 @@ export default function Home() {
                 {selectedSection && (
                   <div
                     key={selectedSection.section_id}
-                    className="bg-gray-900 rounded-lg border border-gray-800"
+                    className={`${t.card} rounded-lg border ${t.border}`}
                   >
-                    <div className="flex gap-4 border-b border-gray-800 px-5 pt-3">
+                    <div className={`flex gap-4 border-b ${t.border} px-5 pt-3`}>
                       <button
                         onClick={() => setReviewTab("reviews")}
                         className={`pb-3 px-2 font-medium ${
                           reviewTab === "reviews"
-                            ? "border-b-2 text-white"
-                            : "text-gray-500"
+                            ? `border-b-2 ${t.text}`
+                            : t.textSec
                         }`}
                         style={
                           reviewTab === "reviews"
@@ -1990,8 +2019,8 @@ export default function Home() {
                         onClick={() => setReviewTab("qa")}
                         className={`pb-3 px-2 font-medium ${
                           reviewTab === "qa"
-                            ? "border-b-2 text-white"
-                            : "text-gray-500"
+                            ? `border-b-2 ${t.text}`
+                            : t.textSec
                         }`}
                         style={
                           reviewTab === "qa" ? { borderColor: "#A6192E" } : {}
@@ -2006,10 +2035,10 @@ export default function Home() {
                           sectionReviews.map((r: any) => (
                             <div
                               key={r.id}
-                              className="border-b border-gray-800 pb-4"
+                              className={`border-b ${t.border} pb-4`}
                             >
                               <div className="flex justify-between mb-2">
-                                <span className="font-medium text-white">
+                                <span className={`font-medium ${t.text}`}>
                                   {r.username}
                                 </span>
                                 <span
@@ -2019,37 +2048,25 @@ export default function Home() {
                                   {r.rating.toFixed(1)}/5.0
                                 </span>
                               </div>
-                              <p className="text-gray-300">{r.content}</p>
+                              <p className={t.text}>{r.content}</p>
                               {r.tags && (
                                 <div className="flex gap-2 mt-2">
                                   {r.tags
                                     .split(",")
-                                    .map((tag: string, i: number) => {
-                                      const colors = [
-                                        "bg-blue-900 text-blue-300",
-                                        "bg-green-900 text-green-300",
-                                        "bg-purple-900 text-purple-300",
-                                        "bg-orange-900 text-orange-300",
-                                        "bg-pink-900 text-pink-300",
-                                        "bg-teal-900 text-teal-300",
-                                      ];
-                                      return (
+                                    .map((tag: string, i: number) => (
                                         <span
                                           key={i}
-                                          className={`text-xs px-2 py-1 rounded ${
-                                            colors[i % colors.length]
-                                          }`}
+                                          className={`text-xs px-2 py-1 rounded text-white ${getTagColor(tag.trim())}`}
                                         >
                                           {tag}
                                         </span>
-                                      );
-                                    })}
+                                      ))}
                                 </div>
                               )}
                             </div>
                           ))
                         ) : (
-                          <div className="text-center text-gray-400 py-8">
+                          <div className={`text-center ${t.textSec} py-8`}>
                             No reviews yet for this section
                           </div>
                         )
@@ -2057,15 +2074,15 @@ export default function Home() {
                         sectionQuestions.map((q: any) => (
                           <div
                             key={q.id}
-                            className="border border-gray-800 rounded-lg p-4"
+                            className={`border ${t.border} rounded-lg p-4`}
                           >
-                            <h4 className="font-semibold text-white">
+                            <h4 className={`font-semibold ${t.text}`}>
                               {q.title}
                             </h4>
-                            <p className="text-sm text-gray-400 mt-2">
+                            <p className={`text-sm ${t.textSec} mt-2`}>
                               {q.content}
                             </p>
-                            <div className="text-xs text-gray-500 mt-2">
+                            <div className={`text-xs ${t.textSec} mt-2`}>
                               ↑ {q.upvotes} • {q.answer_count} answers
                             </div>
                           </div>
@@ -2086,17 +2103,20 @@ export default function Home() {
                     setSelectedProfessor(null);
                     setProfCourses([]);
                   }}
-                  className="text-gray-400 hover:text-white mb-4"
+                  className={`${t.textSec} mb-4`}
+                  style={{ color: isDark ? '' : '#000' }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
+                  onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#9CA3AF' : '#4B5563'}
                 >
                   ← Back to Professors
                 </button>
-                <div className="bg-gray-900 rounded-lg p-5 border border-gray-800 mb-4">
+                <div className={`${t.card} rounded-lg p-5 border ${t.border} mb-4`}>
                   <div className="flex justify-between">
                     <div>
-                      <h2 className="text-2xl font-bold text-white">
+                      <h2 className={`text-2xl font-bold ${t.text}`}>
                         {selectedProfessor.name}
                       </h2>
-                      <p className="text-gray-400">
+                      <p className={t.textSec}>
                         {selectedProfessor.department}
                       </p>
                     </div>
@@ -2137,8 +2157,8 @@ export default function Home() {
                     </div>
                   )}
                 </div>
-                <div className="bg-gray-900 rounded-lg p-5 border border-gray-800">
-                  <h3 className="font-bold text-lg mb-3 text-white">
+                <div className={`${t.card} rounded-lg p-5 border ${t.border}`}>
+                  <h3 className={`font-bold text-lg mb-3 ${t.text}`}>
                     Courses Taught
                   </h3>
                   <div className="space-y-3">
@@ -2154,12 +2174,12 @@ export default function Home() {
                           setCourseSections(data.sections);
                           setSelectedProfessor(null);
                         }}
-                        className="border border-gray-800 rounded-lg p-4 hover:bg-gray-800 cursor-pointer"
+                        className={`border ${t.border} rounded-lg p-4 ${t.hover} cursor-pointer`}
                       >
-                        <h4 className="font-semibold text-white">
+                        <h4 className={`font-semibold ${t.text}`}>
                           {c.course_code} - {c.course_title}
                         </h4>
-                        <div className="text-sm text-gray-400">
+                        <div className={`text-sm ${t.textSec}`}>
                           Section {c.section_number} • {c.semester}
                         </div>
                       </div>
@@ -2179,12 +2199,12 @@ export default function Home() {
                     }
                     value={courseSearchQuery}
                     onChange={(e) => setCourseSearchQuery(e.target.value)}
-                    className="flex-1 px-4 py-3 bg-gray-900 text-white border border-gray-700 rounded-lg focus:outline-none"
+                    className={`flex-1 px-4 py-3 ${t.input} ${t.text} border ${t.border} rounded-lg focus:outline-none`}
                   />
                   <select
                     value={selectedDept}
                     onChange={(e) => setSelectedDept(e.target.value)}
-                    className="px-4 py-3 bg-gray-900 text-white border border-gray-700 rounded-lg focus:outline-none"
+                    className={`px-4 py-3 ${t.input} ${t.text} border ${t.border} rounded-lg focus:outline-none`}
                   >
                     <option value="">All Departments</option>
                     {departments.map((dept) => (
@@ -2194,13 +2214,13 @@ export default function Home() {
                     ))}
                   </select>
                 </div>
-                <div className="flex gap-4 border-b border-gray-800 mb-4">
+                <div className={`flex gap-4 border-b ${t.border} mb-4`}>
                   <button
                     onClick={() => setCourseTab("courses")}
                     className={`pb-3 px-2 font-medium ${
                       courseTab === "courses"
-                        ? "border-b-2 text-white"
-                        : "text-gray-500"
+                        ? `border-b-2 ${t.text}`
+                        : t.textSec
                     }`}
                     style={
                       courseTab === "courses" ? { borderColor: "#A6192E" } : {}
@@ -2212,8 +2232,8 @@ export default function Home() {
                     onClick={() => setCourseTab("professors")}
                     className={`pb-3 px-2 font-medium ${
                       courseTab === "professors"
-                        ? "border-b-2 text-white"
-                        : "text-gray-500"
+                        ? `border-b-2 ${t.text}`
+                        : t.textSec
                     }`}
                     style={
                       courseTab === "professors"
@@ -2227,7 +2247,7 @@ export default function Home() {
                 {courseTab === "courses" ? (
                   <div className="space-y-3">
                     {courses.length === 0 ? (
-                      <div className="bg-gray-900 rounded-lg p-8 text-center text-gray-400">
+                      <div className={`${t.card} rounded-lg p-8 text-center ${t.textSec} border ${t.border}`}>
                         Loading courses...
                       </div>
                     ) : (
@@ -2254,43 +2274,31 @@ export default function Home() {
                               setSectionQuestions(await qRes.json());
                             }
                           }}
-                          className="bg-gray-900 rounded-lg p-5 hover:bg-gray-800 transition cursor-pointer border border-gray-800"
+                          className={`${t.card} rounded-lg p-5 ${t.hover} transition cursor-pointer border ${t.border}`}
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
-                              <h3 className="font-bold text-lg text-white">
+                              <h3 className={`font-bold text-lg ${t.text}`}>
                                 {course.code}
                               </h3>
-                              <p className="text-gray-300 mt-1">
+                              <p className={`${t.text} mt-1`}>
                                 {course.title}
                               </p>
-                              <p className="text-sm text-gray-400 mt-2">
+                              <p className={`text-sm ${t.textSec} mt-2`}>
                                 {course.description}
                               </p>
                               {course.tags && (
                                 <div className="flex gap-2 flex-wrap mt-3">
                                   {course.tags
                                     .split(",")
-                                    .map((tag: string, i: number) => {
-                                      const colors = [
-                                        "bg-blue-900 text-blue-300",
-                                        "bg-green-900 text-green-300",
-                                        "bg-purple-900 text-purple-300",
-                                        "bg-orange-900 text-orange-300",
-                                        "bg-pink-900 text-pink-300",
-                                        "bg-teal-900 text-teal-300",
-                                      ];
-                                      return (
+                                    .map((tag: string, i: number) => (
                                         <span
                                           key={i}
-                                          className={`text-xs px-2 py-1 rounded ${
-                                            colors[i % colors.length]
-                                          }`}
+                                          className={`text-xs px-2 py-1 rounded text-white ${getTagColor(tag.trim())}`}
                                         >
                                           {tag}
                                         </span>
-                                      );
-                                    })}
+                                      ))}
                                 </div>
                               )}
                             </div>
@@ -2311,7 +2319,7 @@ export default function Home() {
                 ) : (
                   <div className="space-y-3">
                     {courseProfessors.length === 0 ? (
-                      <div className="bg-gray-900 rounded-lg p-8 text-center text-gray-400">
+                      <div className={`${t.card} rounded-lg p-8 text-center ${t.textSec} border ${t.border}`}>
                         No professors found.
                       </div>
                     ) : (
@@ -2329,20 +2337,20 @@ export default function Home() {
                               Array.isArray(data.courses) ? data.courses : []
                             );
                           }}
-                          className="bg-gray-900 rounded-lg p-5 hover:bg-gray-800 transition cursor-pointer border border-gray-800"
+                          className={`${t.card} rounded-lg p-5 ${t.hover} transition cursor-pointer border ${t.border}`}
                         >
                           <div className="flex justify-between items-start">
                             <div>
-                              <h3 className="font-bold text-lg text-white">
+                              <h3 className={`font-bold text-lg ${t.text}`}>
                                 {prof.name}
                               </h3>
-                              <p className="text-sm text-gray-400 mt-1">
+                              <p className={`text-sm ${t.textSec} mt-1`}>
                                 {prof.department}
                               </p>
                               {prof.total_reviews > 0 && (
                                 <div className="flex gap-4 mt-3 text-sm">
                                   <div>
-                                    <span className="text-gray-500">
+                                    <span className={t.textSec}>
                                       Rating:{" "}
                                     </span>
                                     <span
@@ -2353,15 +2361,15 @@ export default function Home() {
                                     </span>
                                   </div>
                                   <div>
-                                    <span className="text-gray-500">
+                                    <span className={t.textSec}>
                                       Difficulty:{" "}
                                     </span>
-                                    <span className="font-semibold text-white">
+                                    <span className={`font-semibold ${t.text}`}>
                                       {prof.avg_difficulty.toFixed(1)}/5.0
                                     </span>
                                   </div>
                                   <div>
-                                    <span className="text-gray-500">
+                                    <span className={t.textSec}>
                                       Would take again:{" "}
                                     </span>
                                     <span
@@ -2376,10 +2384,10 @@ export default function Home() {
                               )}
                             </div>
                             <div className="text-right">
-                              <div className="text-2xl font-bold text-white">
+                              <div className={`text-2xl font-bold ${t.text}`}>
                                 {prof.avg_rating.toFixed(1)}
                               </div>
-                              <div className="text-xs text-gray-400">
+                              <div className={`text-xs ${t.textSec}`}>
                                 {prof.total_reviews} reviews
                               </div>
                             </div>
@@ -2397,7 +2405,7 @@ export default function Home() {
         {activeSection === "messages" && (
           <div className="space-y-4">
             {messages.map((msg) => (
-              <div key={msg.id} className="bg-gray-900 rounded-lg shadow p-6">
+              <div key={msg.id} className={`${t.card} rounded-lg shadow p-6 border ${t.border}`}>
                 <div className="flex items-center gap-3 mb-4">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
@@ -2408,17 +2416,17 @@ export default function Home() {
                       : msg.sender_username)[0].toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold text-white">
+                    <p className={`font-semibold ${t.text}`}>
                       {msg.is_sender
                         ? msg.receiver_username
                         : msg.sender_username}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className={`text-sm ${t.textSec}`}>
                       {new Date(msg.created_at).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
-                <p className="text-gray-300">{msg.content}</p>
+                <p className={t.text}>{msg.content}</p>
               </div>
             ))}
           </div>
@@ -2426,9 +2434,9 @@ export default function Home() {
 
         {activeSection === "profile" && (
           <div className="max-w-2xl">
-            <div className="bg-gray-900 rounded-lg p-6 space-y-4">
+            <div className={`${t.card} rounded-lg p-6 space-y-4 border ${t.border}`}>
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className={`text-lg font-semibold ${t.text}`}>
                   Profile Settings
                 </h3>
                 {!isEditing ? (
@@ -2478,13 +2486,13 @@ export default function Home() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                  <label className={`block text-sm font-medium ${t.textSec} mb-2`}>
                     Username
                   </label>
                   {isEditing ? (
                     <input
                       type="text"
-                      className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none"
+                      className={`w-full px-4 py-2 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none`}
                       value={profileData.username}
                       onChange={(e) =>
                         setProfileData({
@@ -2494,18 +2502,18 @@ export default function Home() {
                       }
                     />
                   ) : (
-                    <p className="text-white px-4 py-2">{user.username}</p>
+                    <p className={`${t.text} px-4 py-2`}>{user.username}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                  <label className={`block text-sm font-medium ${t.textSec} mb-2`}>
                     Email
                   </label>
                   {isEditing ? (
                     <input
                       type="email"
-                      className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none"
+                      className={`w-full px-4 py-2 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none`}
                       value={profileData.email}
                       onChange={(e) =>
                         setProfileData({
@@ -2515,20 +2523,20 @@ export default function Home() {
                       }
                     />
                   ) : (
-                    <p className="text-white px-4 py-2">{user.email}</p>
+                    <p className={`${t.text} px-4 py-2`}>{user.email}</p>
                   )}
                 </div>
 
                 {isEditing && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-2">
+                      <label className={`block text-sm font-medium ${t.textSec} mb-2`}>
                         Old Password
                       </label>
                       <input
                         type="password"
                         placeholder="Enter old password"
-                        className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none"
+                        className={`w-full px-4 py-2 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none`}
                         value={profileData.oldPassword}
                         onChange={(e) =>
                           setProfileData({
@@ -2539,13 +2547,13 @@ export default function Home() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-2">
+                      <label className={`block text-sm font-medium ${t.textSec} mb-2`}>
                         New Password
                       </label>
                       <input
                         type="password"
                         placeholder="Enter new password"
-                        className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none"
+                        className={`w-full px-4 py-2 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none`}
                         value={profileData.newPassword}
                         onChange={(e) =>
                           setProfileData({
@@ -2556,13 +2564,13 @@ export default function Home() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-2">
+                      <label className={`block text-sm font-medium ${t.textSec} mb-2`}>
                         Confirm New Password
                       </label>
                       <input
                         type="password"
                         placeholder="Confirm new password"
-                        className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:outline-none"
+                        className={`w-full px-4 py-2 ${t.input} ${t.text} rounded-lg border ${t.border} focus:outline-none`}
                         value={profileData.confirmPassword}
                         onChange={(e) =>
                           setProfileData({
@@ -2578,7 +2586,7 @@ export default function Home() {
 
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <label className="block text-sm font-medium text-gray-400">
+                  <label className={`block text-sm font-medium ${t.textSec}`}>
                     My Tags
                   </label>
                   {!showTagSelector && (
@@ -2593,14 +2601,14 @@ export default function Home() {
                 </div>
 
                 {showTagSelector && (
-                  <div className="mb-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+                  <div className={`mb-4 p-4 ${t.input} rounded-lg border ${t.border}`}>
                     <div className="flex justify-between items-center mb-3">
-                      <p className="text-white text-sm font-medium">
+                      <p className={`${t.text} text-sm font-medium`}>
                         Select a tag to add:
                       </p>
                       <button
                         onClick={() => setShowTagSelector(false)}
-                        className="text-gray-400 hover:text-white"
+                        className={`${t.textSec} hover:${t.text}`}
                       >
                         ✕
                       </button>
@@ -2625,7 +2633,7 @@ export default function Home() {
 
                 <div className="flex flex-wrap gap-2">
                   {userTags.length === 0 ? (
-                    <p className="text-gray-500 text-sm">
+                    <p className={`${t.textSec} text-sm`}>
                       No tags added yet. Click "Add Tag" to get started.
                     </p>
                   ) : (
@@ -2651,24 +2659,24 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="bg-gray-900 rounded-lg p-6 space-y-4 mt-6">
-              <h3 className="text-lg font-semibold text-white">
+            <div className={`${t.card} rounded-lg p-6 space-y-4 mt-6 border ${t.border}`}>
+              <h3 className={`text-lg font-semibold ${t.text}`}>
                 Upcoming Events
               </h3>
               {userEvents.length === 0 ? (
-                <p className="text-gray-400">No upcoming events</p>
+                <p className={t.textSec}>No upcoming events</p>
               ) : (
                 <div className="space-y-3">
                   {userEvents
                     .filter((event) => event.action !== "Join")
                     .map((event, index) => (
-                      <div key={index} className="bg-gray-800 rounded-lg p-4">
+                      <div key={index} className={`${t.input} rounded-lg p-4`}>
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="text-white font-medium">
+                            <p className={`${t.text} font-medium`}>
                               {event.eventName}
                             </p>
-                            <p className="text-gray-400 text-sm">
+                            <p className={`${t.textSec} text-sm`}>
                               {event.action} on {event.date}
                             </p>
                           </div>
@@ -2691,15 +2699,15 @@ export default function Home() {
         )}
       </div>
 
-      <div className="w-80 bg-gray-900 border-l border-gray-800 p-6">
-        <h2 className="text-xl font-bold mb-6 text-white">
+      <div className={`w-80 ${t.sidebar} border-l ${t.border} p-6`}>
+        <h2 className={`text-xl font-bold mb-6 ${t.text}`}>
           {activeSection === "courses" ? "Course Info" : "Trending"}
         </h2>
         <div className="space-y-6">
           {activeSection === "courses" ? (
             <>
               <div>
-                <h3 className="text-sm font-semibold text-gray-400 mb-3">
+                <h3 className={`text-sm font-semibold ${t.textSec} mb-3`}>
                   🔥 Popular Professors
                 </h3>
                 <div className="space-y-3">
@@ -2717,12 +2725,12 @@ export default function Home() {
                             Array.isArray(data.courses) ? data.courses : []
                           );
                         }}
-                        className="cursor-pointer hover:bg-gray-800 p-2 rounded"
+                        className={`cursor-pointer ${t.hover} p-2 rounded`}
                       >
-                        <div className="font-medium text-sm text-white">
+                        <div className={`font-medium text-sm ${t.text}`}>
                           {prof.name}
                         </div>
-                        <div className="text-xs text-gray-400">
+                        <div className={`text-xs ${t.textSec}`}>
                           {prof.department}
                         </div>
                         <div className="flex items-center gap-2 mt-1">
@@ -2732,27 +2740,23 @@ export default function Home() {
                           >
                             {prof.avg_rating.toFixed(1)}
                           </span>
-                          <span className="text-xs text-gray-600">•</span>
-                          <span className="text-xs text-gray-400">
+                          <span className={`text-xs ${t.textSec}`}>•</span>
+                          <span className={`text-xs ${t.textSec}`}>
                             {prof.total_reviews} reviews
                           </span>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-400">No professors yet</p>
+                    <p className={`text-sm ${t.textSec}`}>No professors yet</p>
                   )}
                 </div>
               </div>
               <div
-                className="rounded-lg p-5 border"
-                style={{
-                  backgroundColor: "rgba(166, 25, 46, 0.1)",
-                  borderColor: "rgba(166, 25, 46, 0.3)",
-                }}
+                className={`rounded-lg p-5 border ${t.border} ${t.card}`}
               >
-                <h3 className="font-bold text-white mb-2">💡 Tips</h3>
-                <ul className="text-sm text-gray-300 space-y-2">
+                <h3 className={`font-bold ${t.text} mb-2`}>💡 Tips</h3>
+                <ul className={`text-sm ${t.textSec} space-y-2`}>
                   <li>• Read multiple reviews</li>
                   <li>• Check syllabus</li>
                   <li>• Compare sections</li>
@@ -2762,53 +2766,53 @@ export default function Home() {
           ) : (
             <>
               <div>
-                <h3 className="text-sm font-semibold text-gray-400 mb-3">
+                <h3 className={`text-sm font-semibold ${t.textSec} mb-3`}>
                   Topics
                 </h3>
                 <div className="space-y-2">
-                  <div className="p-3 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer">
-                    <p className="text-white font-medium">#SDSULife</p>
-                    <p className="text-xs text-gray-400">2.3k posts</p>
+                  <div className={`p-3 rounded-lg ${t.card} ${t.hover} cursor-pointer border ${t.border}`}>
+                    <p className={`${t.text} font-medium`}>#SDSULife</p>
+                    <p className={`text-xs ${t.textSec}`}>2.3k posts</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer">
-                    <p className="text-white font-medium">#StudyGroup</p>
-                    <p className="text-xs text-gray-400">1.8k posts</p>
+                  <div className={`p-3 rounded-lg ${t.card} ${t.hover} cursor-pointer border ${t.border}`}>
+                    <p className={`${t.text} font-medium`}>#StudyGroup</p>
+                    <p className={`text-xs ${t.textSec}`}>1.8k posts</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer">
-                    <p className="text-white font-medium">#AztecPride</p>
-                    <p className="text-xs text-gray-400">1.5k posts</p>
+                  <div className={`p-3 rounded-lg ${t.card} ${t.hover} cursor-pointer border ${t.border}`}>
+                    <p className={`${t.text} font-medium`}>#AztecPride</p>
+                    <p className={`text-xs ${t.textSec}`}>1.5k posts</p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-gray-400 mb-3">
+                <h3 className={`text-sm font-semibold ${t.textSec} mb-3`}>
                   Top Mentors
                 </h3>
                 <div className="space-y-2">
-                  <div className="p-3 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer">
-                    <p className="text-white font-medium">Dr. Sarah Chen</p>
-                    <p className="text-xs text-gray-400">Computer Science</p>
+                  <div className={`p-3 rounded-lg ${t.card} ${t.hover} cursor-pointer border ${t.border}`}>
+                    <p className={`${t.text} font-medium`}>Dr. Sarah Chen</p>
+                    <p className={`text-xs ${t.textSec}`}>Computer Science</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer">
-                    <p className="text-white font-medium">Prof. Mike Johnson</p>
-                    <p className="text-xs text-gray-400">Business</p>
+                  <div className={`p-3 rounded-lg ${t.card} ${t.hover} cursor-pointer border ${t.border}`}>
+                    <p className={`${t.text} font-medium`}>Prof. Mike Johnson</p>
+                    <p className={`text-xs ${t.textSec}`}>Business</p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-gray-400 mb-3">
+                <h3 className={`text-sm font-semibold ${t.textSec} mb-3`}>
                   Hot Posts
                 </h3>
                 <div className="space-y-2">
-                  <div className="p-3 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer">
-                    <p className="text-white text-sm">Spring Break Plans 🌴</p>
-                    <p className="text-xs text-gray-400">156 likes</p>
+                  <div className={`p-3 rounded-lg ${t.card} ${t.hover} cursor-pointer border ${t.border}`}>
+                    <p className={`${t.text} text-sm`}>Spring Break Plans 🌴</p>
+                    <p className={`text-xs ${t.textSec}`}>156 likes</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-gray-800 hover:bg-gray-700 cursor-pointer">
-                    <p className="text-white text-sm">Career Fair Tips</p>
-                    <p className="text-xs text-gray-400">142 likes</p>
+                  <div className={`p-3 rounded-lg ${t.card} ${t.hover} cursor-pointer border ${t.border}`}>
+                    <p className={`${t.text} text-sm`}>Career Fair Tips</p>
+                    <p className={`text-xs ${t.textSec}`}>142 likes</p>
                   </div>
                 </div>
               </div>
@@ -2823,7 +2827,7 @@ export default function Home() {
           onClick={() => setSelectedUser(null)}
         >
           <div
-            className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className={`${t.card} rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border ${t.border}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
@@ -2835,7 +2839,7 @@ export default function Home() {
                     className="w-24 h-24 rounded-lg"
                   />
                   <div>
-                    <h2 className="text-2xl font-bold text-white mb-2">
+                    <h2 className={`text-2xl font-bold ${t.text} mb-2`}>
                       {selectedUser.username}
                     </h2>
                     <div className="flex flex-wrap gap-2 mb-2">
@@ -2854,7 +2858,7 @@ export default function Home() {
                 </div>
                 <button
                   onClick={() => setSelectedUser(null)}
-                  className="text-gray-400 hover:text-white"
+                  className={t.textSec}
                 >
                   <svg
                     className="w-6 h-6"
@@ -2872,16 +2876,16 @@ export default function Home() {
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-3">
+                  <h3 className={`text-lg font-semibold ${t.text} mb-3`}>
                     About
                   </h3>
-                  <p className="text-gray-300 mb-4">
+                  <p className={`${t.text} mb-4`}>
                     {selectedUser.bio || "No bio available"}
                   </p>
 
                   {selectedUser.courses && selectedUser.courses.length > 0 && (
                     <div className="mb-4">
-                      <h3 className="text-sm font-semibold text-gray-400 mb-2">
+                      <h3 className={`text-sm font-semibold ${t.textSec} mb-2`}>
                         📚 Courses
                       </h3>
                       <div className="flex flex-wrap gap-2">
@@ -2901,7 +2905,7 @@ export default function Home() {
 
                   {selectedUser.clubs && (
                     <div className="mb-4">
-                      <h3 className="text-sm font-semibold text-gray-400 mb-2">
+                      <h3 className={`text-sm font-semibold ${t.textSec} mb-2`}>
                         🎯 Clubs
                       </h3>
                       <div className="flex flex-wrap gap-2">
@@ -2919,12 +2923,12 @@ export default function Home() {
                     </div>
                   )}
 
-                  <h3 className="text-lg font-semibold text-white mb-3">
+                  <h3 className={`text-lg font-semibold ${t.text} mb-3`}>
                     Availability
                   </h3>
-                  <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-4 mb-4 border border-gray-700">
+                  <div className={`bg-gradient-to-br ${isDark ? 'from-gray-800 to-gray-900' : 'from-gray-50 to-gray-100'} rounded-lg p-4 mb-4 border ${t.border}`}>
                     <div className="mb-3 flex items-center justify-between">
-                      <h4 className="text-white font-medium">
+                      <h4 className={`${t.text} font-medium`}>
                         {calendarDate.toLocaleDateString("en-US", {
                           month: "long",
                           year: "numeric",
@@ -3051,11 +3055,11 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-3">
+                  <h3 className={`text-lg font-semibold ${t.text} mb-3`}>
                     Peer Reviews ({(selectedUser.id % 3) + 2})
                   </h3>
                   <div className="space-y-3">
-                    <div className="bg-gray-800 rounded-lg p-4">
+                    <div className={`${t.input} rounded-lg p-4`}>
                       <div className="flex items-center gap-2 mb-2">
                         <div className="flex">
                           {[1, 2, 3, 4, 5].map((s) => (
@@ -3064,16 +3068,16 @@ export default function Home() {
                             </span>
                           ))}
                         </div>
-                        <span className="text-gray-400 text-sm">
+                        <span className={`${t.textSec} text-sm`}>
                           by @student{selectedUser.id + 1}
                         </span>
                       </div>
-                      <p className="text-gray-300 text-sm">
+                      <p className={`${t.text} text-sm`}>
                         Great study partner! Very knowledgeable and patient.
                         Helped me ace my exam.
                       </p>
                     </div>
-                    <div className="bg-gray-800 rounded-lg p-4">
+                    <div className={`${t.input} rounded-lg p-4`}>
                       <div className="flex items-center gap-2 mb-2">
                         <div className="flex">
                           {[1, 2, 3, 4].map((s) => (
@@ -3083,16 +3087,16 @@ export default function Home() {
                           ))}
                           <span className="text-gray-600">★</span>
                         </div>
-                        <span className="text-gray-400 text-sm">
+                        <span className={`${t.textSec} text-sm`}>
                           by @student{selectedUser.id + 2}
                         </span>
                       </div>
-                      <p className="text-gray-300 text-sm">
+                      <p className={`${t.text} text-sm`}>
                         Really helpful with project work. Knows the material
                         well and explains clearly.
                       </p>
                     </div>
-                    <div className="bg-gray-800 rounded-lg p-4">
+                    <div className={`${t.input} rounded-lg p-4`}>
                       <div className="flex items-center gap-2 mb-2">
                         <div className="flex">
                           {[1, 2, 3, 4, 5].map((s) => (
@@ -3101,11 +3105,11 @@ export default function Home() {
                             </span>
                           ))}
                         </div>
-                        <span className="text-gray-400 text-sm">
+                        <span className={`${t.textSec} text-sm`}>
                           by @student{selectedUser.id + 3}
                         </span>
                       </div>
-                      <p className="text-gray-300 text-sm">
+                      <p className={`${t.text} text-sm`}>
                         Awesome mentor! Made complex topics easy to understand.
                         Highly recommend!
                       </p>
@@ -3128,11 +3132,11 @@ export default function Home() {
 
       {eventModal.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-white mb-4">
+          <div className={`${t.card} rounded-lg p-6 max-w-md w-full mx-4 border ${t.border}`}>
+            <h3 className={`text-xl font-bold ${t.text} mb-4`}>
               {eventModal.action} for Event
             </h3>
-            <p className="text-gray-300 mb-6">
+            <p className={`${t.text} mb-6`}>
               Are you sure you want to {eventModal.action.toLowerCase()} for "
               {eventModal.eventName}"?
             </p>
@@ -3163,17 +3167,17 @@ export default function Home() {
           onClick={() => setShowSyllabus(false)}
         >
           <div
-            className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className={`${t.card} rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto border ${t.border}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
-                <h2 className="text-2xl font-bold text-white">
+                <h2 className={`text-2xl font-bold ${t.text}`}>
                   Course Syllabus
                 </h2>
                 <button
                   onClick={() => setShowSyllabus(false)}
-                  className="text-gray-400 hover:text-white"
+                  className={t.textSec}
                 >
                   <svg
                     className="w-6 h-6"
@@ -3188,7 +3192,7 @@ export default function Home() {
                   </svg>
                 </button>
               </div>
-              <pre className="text-gray-300 whitespace-pre-wrap font-mono text-sm">
+              <pre className={`${t.text} whitespace-pre-wrap font-mono text-sm`}>
                 {syllabusContent}
               </pre>
             </div>
