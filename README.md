@@ -6,7 +6,15 @@
 
 myNexus is a comprehensive student platform for San Diego State University (SDSU) that connects students, provides course information, facilitates peer networking, and keeps students informed about campus events and clubs.
 
-## Features
+## DEMO
+
+- video goes here
+
+## Contributors 
+
+@kedarnhegde @sahil-katle @vinaysurtani @kevin7hacky
+
+## MVP Features -
 
 ### 🏠 AskSDSU
 - Reddit-style forum for student discussions
@@ -31,6 +39,8 @@ myNexus is a comprehensive student platform for San Diego State University (SDSU
 - Connection requests and friend management
 - Availability calendar
 - Peer reviews system
+
+## Other Features - 
 
 ### 📅 Events
 - Campus events calendar
@@ -60,13 +70,12 @@ myNexus is a comprehensive student platform for San Diego State University (SDSU
 - **Framework**: Next.js 14 (React)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
-- **UI Theme**: Apple-inspired light mode design
 
 ### Backend
 - **Framework**: FastAPI (Python)
 - **Database**: MySQL
 - **ORM**: SQLAlchemy
-- **Authentication**: JWT-based
+- **Authentication**: bcrypt
 
 ## Project Structure
 
@@ -104,7 +113,7 @@ myNexus/
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
+git clone git@github.com:kedarnhegde/myNexus.git
 cd myNexus
 ```
 
@@ -120,32 +129,20 @@ mysql -u root -p -e "FLUSH PRIVILEGES;"
 
 3. **Install Dependencies**
 ```bash
-make install-all
-# Or manually:
 # Backend
-cd be && python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+make setup-venv
+make install-be
 # Frontend
-cd ../fe && npm install
+make install-fe
 ```
 
 4. **Seed Database**
 ```bash
 make seed
-make seed-courses
-# Or manually:
-cd be && source .venv/bin/activate
-python seed.py
-python seed_courses.py
 ```
 
 5. **Run the Application**
 ```bash
-# Run both frontend and backend
-make dev
-
-# Or run separately:
 # Terminal 1 - Backend
 make run-be
 # Terminal 2 - Frontend
@@ -178,55 +175,6 @@ make run-fe
 - **reviews**: Section reviews with ratings
 - **questions**: Section Q&A
 
-## API Endpoints
-
-### Authentication
-- `POST /register` - Register new user
-- `POST /login` - User login
-
-### Users
-- `GET /users/{user_id}` - Get user profile
-- `PUT /users/{user_id}` - Update user profile
-- `GET /users/search` - Search users
-- `GET /users/recommended/{user_id}` - Get recommended connections
-- `GET /users/{user_id}/tags` - Get user tags
-- `POST /users/{user_id}/tags/{tag_id}` - Add tag to user
-- `DELETE /users/{user_id}/tags/{tag_id}` - Remove tag from user
-
-### Posts
-- `GET /posts/` - Get all posts (with filters)
-- `POST /posts/` - Create post
-- `POST /posts/{post_id}/vote` - Vote on post
-- `GET /posts/{post_id}/comments` - Get post comments
-- `POST /posts/{post_id}/comments` - Add comment
-
-### Connections
-- `GET /connections/{user_id}` - Get user connections
-- `POST /connections/` - Send connection request
-- `PUT /connections/{connection_id}` - Accept/reject request
-
-### Messages
-- `GET /messages/{user_id}` - Get user messages
-- `POST /messages/` - Send message
-
-### Courses
-- `GET /courses/search` - Search courses
-- `GET /courses/{course_id}` - Get course details
-- `GET /departments` - Get all departments
-
-### Professors
-- `GET /professors/search` - Search professors
-- `GET /professors/{professor_id}` - Get professor details
-- `GET /professors/popular` - Get popular professors
-
-### Sections
-- `GET /sections/{section_id}/reviews` - Get section reviews
-- `GET /sections/{section_id}/questions` - Get section Q&A
-- `GET /syllabus/{section_id}` - Get section syllabus
-
-### Tags
-- `GET /tags/` - Get all tags
-
 ## Design System
 
 ### Colors
@@ -242,49 +190,9 @@ make run-fe
 - Companies: Blue, Red, Orange, Gray, Sky (500 shades)
 - Skills: Various 500-level shades for consistent, non-bright appearance
 
-## Development
-
-### Makefile Commands
-```bash
-make setup-venv        # Create Python virtual environment
-make install-be        # Install backend dependencies
-make install-fe        # Install frontend dependencies
-make install-all       # Install all dependencies
-make run-be            # Run backend server
-make run-fe            # Run frontend server
-make dev               # Run both servers
-make setup-db          # Setup MySQL database
-make seed              # Seed database with sample data
-make seed-courses      # Seed course data
-```
-
 ### Sample Users
 After seeding, you can login with:
-- Username: `alice` / Password: `password123`
-- Username: `bob` / Password: `password123`
-- Username: `charlie` / Password: `password123`
-
-## Features in Detail
-
-### Smart Matching Algorithm
-Peer Connect uses a recommendation system that matches students based on:
-- Shared courses
-- Similar tags (year, major, skills)
-- Common interests
-- Complementary skills
-
-### Course Reviews
-- 5-star rating system
-- Difficulty ratings
-- "Would take again" percentage
-- Tagged reviews (engaging, challenging, etc.)
-- Section-specific feedback
-
-### Event Management
-- Register, Join, or Get Tickets for events
-- Track registered events in profile
-- Event categories and tags
-- Date and location information
+- Username: `kedar` / Password: `kedar`
 
 ## Contributing
 
