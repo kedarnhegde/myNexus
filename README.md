@@ -8,7 +8,11 @@ myNexus is a comprehensive student platform for San Diego State University (SDSU
 
 ## DEMO
 
-- video goes here
+
+
+https://github.com/user-attachments/assets/bf93a99c-f7ba-4f99-9a86-e81537c00761
+
+
 
 ## Contributors 
 
